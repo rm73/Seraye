@@ -6,6 +6,7 @@ dist
 !.env.example
 
 .vercel
+data
 *.log
 .DS_Store
 Thumbs.db

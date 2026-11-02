@@ -8,9 +8,12 @@ import {
   shiftStamp,
   todayStamp,
 } from "./booking";
+import { createClientBooking, loadAvailability } from "./api";
 import { faqs, packages, portfolio, terms } from "./data";
+import { addMinutes, normalizeTime, packageMinutes, slotStatus } from "./schedule";
 
 const defaultPackageId = "sekejap";
+const bookingFee = 100000;
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -74,6 +77,10 @@ export default function App() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [schedule, setSchedule] = useState({ bookings: [], blocks: [] });
+  const [scheduleReady, setScheduleReady] = useState(false);
+  const [scheduleError, setScheduleError] = useState("");
   const lightboxFrameRef = useRef(null);
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
@@ -102,9 +109,45 @@ export default function App() {
     ? buildWhatsAppMessage({ name, bookingId, location, notes })
     : "";
   const whatsAppHref = message ? buildWhatsAppUrl(message) : "";
+  const sessionStart = normalizeTime(startTime);
+  const sessionEnd = sessionStart ? addMinutes(sessionStart, packageMinutes(selected)) : "";
+  const slot = date && sessionStart
+    ? slotStatus({
+        bookings: schedule.bookings,
+        blocks: schedule.blocks,
+        date,
+        start: sessionStart,
+        end: sessionEnd,
+      })
+    : { ok: true, message: "" };
+  const canBook = ready && slot.ok && scheduleReady && !saving;
   const consultHref = buildWhatsAppUrl(
     "Halo Min, saya ingin konsultasi ketersediaan slot Seraye Moments.",
   );
+
+  useEffect(() => {
+    let ignore = false;
+    function load() {
+      loadAvailability()
+        .then((data) => {
+          if (ignore) return;
+          setSchedule(data);
+          setScheduleReady(true);
+          setScheduleError("");
+        })
+        .catch(() => {
+          if (ignore) return;
+          setScheduleReady(false);
+          setScheduleError("Jadwal belum bisa dicek. Muat ulang halaman.");
+        });
+    }
+    load();
+    window.addEventListener("focus", load);
+    return () => {
+      ignore = true;
+      window.removeEventListener("focus", load);
+    };
+  }, [date, startTime, packageId]);
 
   useEffect(() => {
     if (!lightbox) return undefined;
@@ -247,12 +290,49 @@ export default function App() {
     scrollToId(id);
   }
 
+  async function recordBooking(source) {
+    setAttempted(true);
+    if (!canBook) return false;
+    setSaving(true);
+    setScheduleError("");
+    try {
+      await createClientBooking({
+        id: bookingId,
+        name,
+        whatsapp,
+        date,
+        startTime: sessionStart,
+        packageId: selected.id,
+        location,
+        notes,
+        source,
+      });
+      const data = await loadAvailability();
+      setSchedule(data);
+      return true;
+    } catch (reason) {
+      setScheduleError(reason.message);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function continueWhatsApp() {
+    const saved = await recordBooking("whatsapp");
+    if (!saved) return;
+    window.open(whatsAppHref, "_blank", "noopener");
+  }
+
   async function copyMessage() {
+    const saved = await recordBooking("copy");
+    if (!saved) return;
     try {
       await navigator.clipboard.writeText(message);
       setCopied(true);
     } catch {
       setCopied(false);
+      setScheduleError("Booking tersimpan, tetapi pesan gagal disalin.");
     }
   }
 
@@ -420,7 +500,7 @@ export default function App() {
                 <label>
                   Jam mulai pemotretan
                   <input
-                    className={invalid("start") ? "picker invalid" : "picker"}
+                    className={invalid("start") || (date && sessionStart && !slot.ok) ? "picker invalid" : "picker"}
                     type="time"
                     value={startTime}
                     onChange={(event) => {
@@ -430,6 +510,12 @@ export default function App() {
                     onClick={openPicker}
                     onMouseEnter={openPicker}
                   />
+                  {date && sessionStart && slot.message ? (
+                    <span className={slot.ok ? "hint" : "hint hint-alert"}>{slot.message}</span>
+                  ) : null}
+                  {date && sessionStart && slot.ok ? (
+                    <span className="hint">Sesi {sessionStart}–{sessionEnd}</span>
+                  ) : null}
                 </label>
               </div>
               <label>
@@ -472,6 +558,14 @@ export default function App() {
                   <dt>Total harga paket</dt>
                   <dd>{rupiah(selected.price)}</dd>
                 </div>
+                <div>
+                  <dt>DP</dt>
+                  <dd>{rupiah(bookingFee)}</dd>
+                </div>
+                <div>
+                  <dt>Pelunasan H-1</dt>
+                  <dd>{rupiah(selected.price - bookingFee)}</dd>
+                </div>
               </dl>
               <div className="guarantee">
                 <p>Pengiriman hasil</p>
@@ -481,25 +575,32 @@ export default function App() {
                 </ul>
               </div>
 
-              {ready ? (
-                <a
-                  id="wa-link"
-                  className="btn btn-block"
-                  href={whatsAppHref}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+              {canBook ? (
+                <button id="wa-link" className="btn btn-block" type="button" onClick={continueWhatsApp}>
                   Lanjutkan Booking via WhatsApp
-                </a>
+                </button>
               ) : (
                 <button
                   className={attempted ? "btn btn-block is-muted is-alert" : "btn btn-block is-muted"}
                   type="button"
                   onClick={() => setAttempted(true)}
+                  disabled={ready && !slot.ok}
                 >
                   Lanjutkan Booking via WhatsApp
                 </button>
               )}
+
+              {scheduleError ? (
+                <div className="missing">
+                  <p>{scheduleError}</p>
+                </div>
+              ) : null}
+
+              {ready && !slot.ok ? (
+                <div className="missing">
+                  <p>{slot.message}</p>
+                </div>
+              ) : null}
 
               {attempted && !ready ? (
                 <div className="missing">
@@ -512,7 +613,7 @@ export default function App() {
                 </div>
               ) : null}
 
-              {ready ? (
+              {canBook ? (
                 <div className="wa-box">
                   <p className="booking-id">
                     ID Pemesanan
