@@ -149,9 +149,6 @@ export default function AdminApp() {
 
   const dates = useMemo(() => {
     const stamps = new Set(schedule.bookings.map((booking) => booking.date));
-    schedule.blocks.forEach((block) => {
-      stamps.add(block.startDate);
-    });
     return [...stamps].sort();
   }, [schedule]);
 
