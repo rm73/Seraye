@@ -7,15 +7,25 @@ function bookingsFile() {
   return process.env.BOOKINGS_PATH || path.join(process.cwd(), "data", "bookings.json");
 }
 
-function kvConfigured() {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+function redisCredentials() {
+  const urlKey = Object.keys(process.env).find(
+    (key) => process.env[key] && /(?:^|_)(?:KV_REST_API_URL|UPSTASH_REDIS_REST_URL)$/.test(key),
+  );
+  if (!urlKey) return null;
+  const tokenKey = urlKey.endsWith("KV_REST_API_URL")
+    ? urlKey.replace(/KV_REST_API_URL$/, "KV_REST_API_TOKEN")
+    : urlKey.replace(/UPSTASH_REDIS_REST_URL$/, "UPSTASH_REDIS_REST_TOKEN");
+  const token = process.env[tokenKey];
+  if (!token) return null;
+  return { url: process.env[urlKey], token };
 }
 
 async function kvCommand(command) {
-  const response = await fetch(process.env.KV_REST_API_URL, {
+  const redis = redisCredentials();
+  const response = await fetch(redis.url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+      Authorization: `Bearer ${redis.token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(command),
@@ -60,31 +70,35 @@ async function writeFileState(state) {
   await writeFile(file, JSON.stringify(state, null, 2));
 }
 
+function storageUnavailable() {
+  const failure = new Error("Data belum tersimpan karena penyimpanan server belum terhubung.");
+  failure.status = 503;
+  return failure;
+}
+
 export function storageInfo() {
-  if (kvConfigured()) return { storage: "redis", persistent: true };
+  if (redisCredentials()) return { storage: "redis", persistent: true };
   if (process.env.VERCEL) return { storage: "file", persistent: false };
   return { storage: "file", persistent: true };
 }
 
 export async function readState() {
-  if (kvConfigured()) return readKv();
+  if (redisCredentials()) return readKv();
+  if (process.env.VERCEL) return emptyState();
   return readFileState();
 }
 
 export async function writeState(state) {
-  if (kvConfigured()) {
+  if (redisCredentials()) {
     await writeKv(state);
     return;
   }
+  if (process.env.VERCEL) throw storageUnavailable();
   try {
     await writeFileState(state);
   } catch (error) {
-    if (error.code === "EROFS" || error.code === "EPERM" || error.code === "EACCES") {
-      const failure = new Error(
-        "Penyimpanan belum terhubung. Di Vercel, tambahkan Upstash Redis. Di Docker, pasang volume untuk /data.",
-      );
-      failure.status = 503;
-      throw failure;
+    if (error.code === "EROFS" || error.code === "EPERM" || error.code === "EACCES" || error.code === "ENOENT") {
+      throw storageUnavailable();
     }
     throw error;
   }
