@@ -19,6 +19,11 @@ function adminPassword() {
   return "seraye-admin";
 }
 
+function adminLinkKey() {
+  if (process.env.ADMIN_LINK_KEY) return process.env.ADMIN_LINK_KEY;
+  return "seraye-admin";
+}
+
 function tokenSecret() {
   return process.env.ADMIN_SECRET || adminPassword() || "seraye-dev-secret";
 }
@@ -190,7 +195,7 @@ async function handleAuth(req, res) {
   if (req.method !== "POST") return send(res, 405, { message: "Metode tidak didukung." });
   const body = await readBody(req);
   const password = adminPassword();
-  const linkKey = process.env.ADMIN_LINK_KEY || "";
+  const linkKey = adminLinkKey();
   const passwordOk = password && cleanText(body.password, 200) === password;
   const linkOk = linkKey && cleanText(body.key, 200) === linkKey;
   if (!password && !linkKey) {
