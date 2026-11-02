@@ -42,6 +42,16 @@ function formatDate(stamp) {
   });
 }
 
+function blockSpan(block) {
+  const start = formatDate(block.startDate);
+  const end = formatDate(block.endDate);
+  if (!block.startTime || !block.endTime) {
+    return block.endDate === block.startDate ? `${start}, seharian` : `${start} – ${end}, seharian`;
+  }
+  if (block.endDate === block.startDate) return `${start}, ${block.startTime}–${block.endTime}`;
+  return `${start} ${block.startTime} – ${end} ${block.endTime}`;
+}
+
 function Login({ onSuccess }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -147,12 +157,6 @@ export default function AdminApp() {
 
   const visibleDates = filterDate ? dates.filter((date) => date === filterDate) : dates;
 
-  function logout() {
-    setAdminToken("");
-    setAuthed(false);
-    setDraft(null);
-  }
-
   async function run(action, success) {
     setError("");
     setNotice("");
@@ -191,18 +195,9 @@ export default function AdminApp() {
         </div>
         <div className="admin-bar-actions">
           <a href="/">Lihat situs</a>
-          <button type="button" onClick={logout}>
-            Keluar
-          </button>
         </div>
       </header>
 
-      {schedule.persistent === false ? (
-        <p className="admin-warn">
-          Penyimpanan belum menetap. Di Vercel, hubungkan Upstash Redis lewat Storage. Di Docker, jalankan ulang image
-          terbaru dengan volume <code>/data</code>.
-        </p>
-      ) : null}
       {error ? <p className="admin-error">{error}</p> : null}
       {notice ? <p className="admin-notice">{notice}</p> : null}
 
@@ -279,7 +274,7 @@ export default function AdminApp() {
             />
           </label>
           <label>
-            Alasan
+            Deskripsi
             <input
               value={blockForm.reason}
               onChange={(event) => setBlockForm({ ...blockForm, reason: event.target.value })}
@@ -289,15 +284,22 @@ export default function AdminApp() {
           <button className="btn btn-forest" type="submit">
             Simpan blokir
           </button>
+          <div className="admin-block-note">
+            <p className="hint">Kosongkan jam untuk menutup seharian. Isi keduanya untuk menutup rentang jam.</p>
+            <button
+              className="admin-reset"
+              type="button"
+              onClick={() => setBlockForm((current) => ({ ...current, startTime: "", endTime: "" }))}
+            >
+              Reset jam
+            </button>
+          </div>
         </form>
-        <p className="hint">Kosongkan jam untuk menutup seharian. Isi keduanya untuk menutup rentang jam.</p>
         <ul>
           {schedule.blocks.map((block) => (
             <li key={block.id}>
               <span>
-                {formatDate(block.startDate)}
-                {block.endDate !== block.startDate ? ` – ${formatDate(block.endDate)}` : ""}
-                {block.startTime ? `, ${block.startTime}–${block.endTime}` : ", seharian"}
+                {blockSpan(block)}
                 {` · ${block.reason}`}
               </span>
               <button type="button" onClick={() => run(() => deleteBlock(block.id), "Blokir dihapus.")}>

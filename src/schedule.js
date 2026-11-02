@@ -41,7 +41,10 @@ function sameDayBlocks(blocks, date) {
 export function isAdminBlocked(blocks, date, start, end) {
   return sameDayBlocks(blocks, date).some((block) => {
     if (!block.startTime || !block.endTime) return true;
-    return rangesOverlap(start, end, block.startTime, block.endTime);
+    const windowStart = date === block.startDate ? block.startTime : "00:00";
+    const windowEnd = date === block.endDate ? block.endTime : "24:00";
+    if (windowStart >= windowEnd) return false;
+    return rangesOverlap(start, end, windowStart, windowEnd);
   });
 }
 

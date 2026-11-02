@@ -279,8 +279,11 @@ async function handleAdminBlocks(req, res) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || endDate < startDate) {
       return send(res, 400, { message: "Rentang tanggal blokir belum benar." });
     }
-    if ((startTime && !endTime) || (!startTime && endTime) || (startTime && endTime && startTime >= endTime)) {
+    if ((startTime && !endTime) || (!startTime && endTime)) {
       return send(res, 400, { message: "Isi jam mulai dan jam selesai, atau kosongkan keduanya untuk menutup seharian." });
+    }
+    if (startTime && endTime && `${startDate}T${startTime}` >= `${endDate}T${endTime}`) {
+      return send(res, 400, { message: "Jam selesai harus setelah jam mulai." });
     }
     const block = {
       id: `blk${Date.now().toString(36)}`,
