@@ -9,11 +9,13 @@ import {
   todayStamp,
 } from "./booking";
 import { createClientBooking, loadAvailability } from "./api";
-import { faqs, packages, portfolio, terms } from "./data";
+import { faqGroups, MUA_ADDON_PRICE, MUA_DP, packages, PHOTO_ADDON, STANDARD_DP, terms } from "./data";
+import { prewisudaPortfolio, wisudaPortfolio } from "./portfolio";
 import { addMinutes, normalizeTime, packageMinutes, slotStatus } from "./schedule";
+import { SERAYE_WHATSAPP } from "./config";
 
 const defaultPackageId = "sekejap";
-const bookingFee = 100000;
+const logoSrc = "/assets/logo%20seraye%20moments%20-%20Gold%20(1).png";
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -30,12 +32,11 @@ function openPicker(event) {
 }
 
 function PackageCard({ item, active, onSelect, onBook }) {
+  const classes = ["pkg-card", active ? "is-selected" : "", item.highlight ? "is-highlight" : ""].filter(Boolean).join(" ");
   return (
-    <article
-      className={active ? "pkg-card is-selected" : "pkg-card"}
-      onClick={onSelect}
-    >
+    <article className={classes} onClick={onSelect}>
       {item.bestSeller ? <p className="ribbon">Best Seller</p> : null}
+      {item.image ? <img className="pkg-photo" src={item.image} alt="" /> : null}
       <div className="pkg-body">
         <h3>{item.name}</h3>
         <p className="price">
@@ -62,6 +63,43 @@ function PackageCard({ item, active, onSelect, onBook }) {
   );
 }
 
+function SempurnaCard({ item, active, onSelect, onBook }) {
+  return (
+    <article className={active ? "pkg-card sempurna-card is-selected is-highlight" : "pkg-card sempurna-card is-highlight"} onClick={onSelect}>
+      <div className="sempurna-copy">
+        <div className="collab">
+          <img src="/assets/logo.png" alt="Seraye Moments" />
+          <span>x</span>
+          <img className="logo-round" src="/assets/Anadevi.jpeg" alt="Anadevi" />
+        </div>
+        <p className="ribbon ribbon-left">Special Offer</p>
+        <p className="only">Hanya dengan 589K</p>
+        <h3>Sempurna</h3>
+        <p className="price">
+          {rupiah(item.price)}
+          <s>{rupiah(item.compareAt)}</s>
+        </p>
+        <ul>
+          {item.points.map((point) => (
+            <li key={point}>{point}</li>
+          ))}
+        </ul>
+        <button
+          className="btn btn-select"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onBook();
+          }}
+        >
+          {active ? "Lanjut isi form" : "Pilih paket ini"}
+        </button>
+      </div>
+      <img className="sempurna-photo" src={item.image} alt="Contoh hasil Paket Sempurna" />
+    </article>
+  );
+}
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [packageId, setPackageId] = useState(defaultPackageId);
@@ -71,6 +109,17 @@ export default function App() {
   const [startTime, setStartTime] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [extraPhotos, setExtraPhotos] = useState(0);
+  const [includeMua, setIncludeMua] = useState(false);
+  const [muaPrompt, setMuaPrompt] = useState(false);
+  const [makeupDate, setMakeupDate] = useState("");
+  const [makeupTime, setMakeupTime] = useState("");
+  const [hairStyle, setHairStyle] = useState("");
+  const [muaAddress, setMuaAddress] = useState("");
+  const [muaMap, setMuaMap] = useState("");
+  const [folioTab, setFolioTab] = useState("wisuda");
+  const [openFaq, setOpenFaq] = useState("");
+  const [showTop, setShowTop] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -89,6 +138,15 @@ export default function App() {
   const earliestDate = shiftStamp(todayStamp(), 3);
   const photoPackages = packages.filter((item) => item.group === "photography");
   const videoPackages = packages.filter((item) => item.group === "videography");
+  const sempurna = photoPackages.find((item) => item.id === "sempurna");
+  const otherPhoto = photoPackages.filter((item) => item.id !== "sempurna");
+  const needsMuaFields = selected.includesMua || (selected.muaAddon && includeMua);
+  const photoFee = selected.id === "sempurna" ? extraPhotos * PHOTO_ADDON : 0;
+  const muaFee = selected.muaAddon && includeMua ? MUA_ADDON_PRICE : 0;
+  const totalPrice = selected.price + photoFee + muaFee;
+  const bookingFee = needsMuaFields ? MUA_DP : STANDARD_DP;
+  const balance = Math.max(totalPrice - bookingFee, 0);
+  const activeFolio = folioTab === "wisuda" ? wisudaPortfolio : prewisudaPortfolio;
 
   const missing = useMemo(() => {
     const items = [];
@@ -96,9 +154,14 @@ export default function App() {
     if (!isActiveWhatsApp(whatsapp)) items.push({ key: "whatsapp", label: "Nomor WhatsApp" });
     if (!date || date < earliestDate) items.push({ key: "date", label: "Tanggal sesi (minimal 3 hari dari hari ini)" });
     if (!startTime) items.push({ key: "start", label: "Jam mulai pemotretan" });
-    if (location.trim().length < 3) items.push({ key: "location", label: "Lokasi titik temu" });
+    if (needsMuaFields) {
+      if (!makeupDate) items.push({ key: "makeupDate", label: "Tanggal make up" });
+      if (!makeupTime) items.push({ key: "makeupTime", label: "Jam make up" });
+      if (!hairStyle) items.push({ key: "hairStyle", label: "Hijabdo atau Hairdo" });
+      if (muaAddress.trim().length < 8) items.push({ key: "muaAddress", label: "Alamat lengkap untuk MUA" });
+    }
     return items;
-  }, [date, earliestDate, location, name, startTime, whatsapp]);
+  }, [date, earliestDate, hairStyle, makeupDate, makeupTime, muaAddress, name, needsMuaFields, startTime, whatsapp]);
 
   const ready = missing.length === 0;
   const invalid = (key) => attempted && missing.some((item) => item.key === key);
@@ -106,7 +169,23 @@ export default function App() {
     ? buildBookingId({ date, startTime, code: selected.code })
     : "";
   const message = ready
-    ? buildWhatsAppMessage({ name, bookingId, location, notes })
+    ? buildWhatsAppMessage({
+        name,
+        bookingId,
+        location,
+        notes,
+        packageName: selected.name,
+        includeMua: needsMuaFields,
+        extraPhotos: photoFee ? extraPhotos : 0,
+        extraPhotoFee: photoFee,
+        makeupDate: needsMuaFields ? makeupDate : "",
+        makeupTime: needsMuaFields ? makeupTime : "",
+        hairStyle: needsMuaFields ? hairStyle : "",
+        muaAddress: needsMuaFields ? muaAddress : "",
+        muaMap: needsMuaFields ? muaMap : "",
+        total: totalPrice,
+        dp: bookingFee,
+      })
     : "";
   const whatsAppHref = message ? buildWhatsAppUrl(message) : "";
   const sessionStart = normalizeTime(startTime);
@@ -283,7 +362,19 @@ export default function App() {
   function choosePackage(id) {
     setPackageId(id);
     setCopied(false);
+    if (id === "sekejap" && !includeMua) setMuaPrompt(true);
+    if (id !== "sekejap") setIncludeMua(false);
+    if (id !== "sempurna") setExtraPhotos(0);
   }
+
+  useEffect(() => {
+    function onScroll() {
+      setShowTop(window.scrollY > 480);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   function closeMenuAndGo(id) {
     setMenuOpen(false);
@@ -306,6 +397,15 @@ export default function App() {
         location,
         notes,
         source,
+        extraPhotos: photoFee ? extraPhotos : 0,
+        includeMua: needsMuaFields,
+        makeupDate: needsMuaFields ? makeupDate : "",
+        makeupTime: needsMuaFields ? makeupTime : "",
+        hairStyle: needsMuaFields ? hairStyle : "",
+        muaAddress: needsMuaFields ? muaAddress : "",
+        muaMap: needsMuaFields ? muaMap : "",
+        totalPrice,
+        bookingFee,
       });
       const data = await loadAvailability();
       setSchedule(data);
@@ -341,8 +441,7 @@ export default function App() {
       <header className="site-header">
         <div className="header-inner">
           <a className="brand" href="#paket" onClick={() => setMenuOpen(false)}>
-            <img src="/assets/logo.png" alt="" />
-            <span>Seraye Moments</span>
+            <img src={logoSrc} alt="Seraye Moments" />
           </a>
           <button
             className="menu-toggle"
@@ -359,6 +458,7 @@ export default function App() {
             <button type="button" onClick={() => closeMenuAndGo("paket")}>
               Katalog
             </button>
+            <a href="/feedback">Penilaian</a>
             <button className="btn btn-forest" type="button" onClick={() => closeMenuAndGo("booking")}>
               Booking
             </button>
@@ -370,10 +470,21 @@ export default function App() {
         <section className="catalog" id="paket">
           <div className="catalog-block">
             <div className="catalog-title">
-              <h2>Katalog Pricelist Photography</h2>
+              <h2>Katalog Semarak</h2>
             </div>
             <div className="catalog-grid photo">
-              {photoPackages.map((item) => (
+              {sempurna ? (
+                <SempurnaCard
+                  item={sempurna}
+                  active={sempurna.id === selected.id}
+                  onSelect={() => choosePackage(sempurna.id)}
+                  onBook={() => {
+                    choosePackage(sempurna.id);
+                    scrollToId("booking");
+                  }}
+                />
+              ) : null}
+              {otherPhoto.map((item) => (
                 <PackageCard
                   key={item.id}
                   item={item}
@@ -390,7 +501,7 @@ export default function App() {
 
           <div className="catalog-block">
             <div className="catalog-title">
-              <h2>Katalog Pricelist Videography</h2>
+              <h2>Katalog Selangkah</h2>
             </div>
             <div className="catalog-grid video">
               {videoPackages.map((item) => (
@@ -454,14 +565,14 @@ export default function App() {
                   value={selected.id}
                   onChange={(event) => choosePackage(event.target.value)}
                 >
-                  <optgroup label="Photography">
+                  <optgroup label="Katalog Semarak">
                     {photoPackages.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name} ({rupiah(item.price)})
                       </option>
                     ))}
                   </optgroup>
-                  <optgroup label="Videography">
+                  <optgroup label="Katalog Selangkah">
                     {videoPackages.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name} ({rupiah(item.price)})
@@ -473,6 +584,7 @@ export default function App() {
               <div className="explain">
                 <strong>
                   {selected.name} · {selected.groupLabel}
+                  {needsMuaFields ? " · include Paket MUA" : ""}
                 </strong>
                 <ul>
                   {selected.points.map((point) => (
@@ -480,6 +592,98 @@ export default function App() {
                   ))}
                 </ul>
               </div>
+              {selected.muaAddon ? (
+                <label className="check-line">
+                  <input
+                    type="checkbox"
+                    checked={includeMua}
+                    onChange={(event) => {
+                      setIncludeMua(event.target.checked);
+                      setCopied(false);
+                    }}
+                  />
+                  Tambah Include Paket MUA (+{rupiah(MUA_ADDON_PRICE)})
+                </label>
+              ) : null}
+              {selected.id === "sempurna" ? (
+                <div className="addon">
+                  <div>
+                    <strong>Add-on edit foto</strong>
+                    <p>{rupiah(PHOTO_ADDON)}/foto. Opsional, khusus paket Sempurna.</p>
+                  </div>
+                  <div className="stepper">
+                    <button type="button" onClick={() => setExtraPhotos((count) => Math.max(0, count - 1))} aria-label="Kurangi foto">
+                      −
+                    </button>
+                    <span>{extraPhotos}</span>
+                    <button type="button" onClick={() => setExtraPhotos((count) => count + 1)} aria-label="Tambah foto">
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {needsMuaFields ? (
+                <fieldset className="mua-fields">
+                  <legend>Detail MUA</legend>
+                  <div className="field-row">
+                    <label>
+                      Tanggal make up
+                      <input
+                        className={invalid("makeupDate") ? "picker invalid" : "picker"}
+                        type="date"
+                        value={makeupDate}
+                        onChange={(event) => setMakeupDate(event.target.value)}
+                        onClick={openPicker}
+                      />
+                    </label>
+                    <label>
+                      Jam make up
+                      <input
+                        className={invalid("makeupTime") ? "picker invalid" : "picker"}
+                        type="time"
+                        value={makeupTime}
+                        onChange={(event) => setMakeupTime(event.target.value)}
+                        onClick={openPicker}
+                      />
+                    </label>
+                  </div>
+                  <p className="hint">Pilih salah satu.</p>
+                  <div className="choice-row">
+                    {["Hijabdo", "Hairdo"].map((option) => (
+                      <label key={option} className={hairStyle === option ? "choice is-on" : "choice"}>
+                        <input
+                          type="radio"
+                          name="hairStyle"
+                          value={option}
+                          checked={hairStyle === option}
+                          onChange={() => setHairStyle(option)}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                  <label>
+                    Alamat lengkap
+                    <textarea
+                      className={invalid("muaAddress") ? "invalid" : ""}
+                      value={muaAddress}
+                      onChange={(event) => setMuaAddress(event.target.value)}
+                      rows={3}
+                      placeholder="Alamat lengkap supaya MUA tahu titik penjemputan"
+                    />
+                  </label>
+                  <label>
+                    Google Maps
+                    <textarea
+                      value={muaMap}
+                      onChange={(event) => setMuaMap(event.target.value)}
+                      rows={2}
+                      placeholder="Tempel tautan Google Maps alamat MUA"
+                    />
+                  </label>
+                  <p className="hint">DP minimum {rupiah(MUA_DP)} karena paket langsung mengunci fotografer dan MUA. Jika ada kendala dalam pembokingan bisa menghubungi admin.</p>
+                </fieldset>
+              ) : null}
               <div className="field-row">
                 <label>
                   Tanggal sesi
@@ -519,9 +723,8 @@ export default function App() {
                 </label>
               </div>
               <label>
-                Lokasi titik temu
+                Lokasi titik temu (opsional)
                 <input
-                  className={invalid("location") ? "invalid" : ""}
                   value={location}
                   onChange={(event) => {
                     setLocation(event.target.value);
@@ -555,16 +758,32 @@ export default function App() {
               </div>
               <dl>
                 <div>
-                  <dt>Total harga paket</dt>
+                  <dt>Harga paket</dt>
                   <dd>{rupiah(selected.price)}</dd>
                 </div>
+                {muaFee ? (
+                  <div>
+                    <dt>Include Paket MUA</dt>
+                    <dd>{rupiah(muaFee)}</dd>
+                  </div>
+                ) : null}
+                {photoFee ? (
+                  <div>
+                    <dt>Add-on edit foto ({extraPhotos})</dt>
+                    <dd>{rupiah(photoFee)}</dd>
+                  </div>
+                ) : null}
                 <div>
-                  <dt>DP</dt>
+                  <dt>Total harga paket</dt>
+                  <dd>{rupiah(totalPrice)}</dd>
+                </div>
+                <div>
+                  <dt>{needsMuaFields ? "DP min." : "DP"}</dt>
                   <dd>{rupiah(bookingFee)}</dd>
                 </div>
                 <div>
                   <dt>Pelunasan H-1</dt>
-                  <dd>{rupiah(selected.price - bookingFee)}</dd>
+                  <dd>{rupiah(balance)}</dd>
                 </div>
               </dl>
               <div className="guarantee">
@@ -631,11 +850,19 @@ export default function App() {
         <section className="portfolio" id="portofolio">
           <div className="section-head">
             <h2>Portofolio</h2>
+            <div className="folio-tabs">
+              <button type="button" className={folioTab === "wisuda" ? "is-on" : ""} onClick={() => setFolioTab("wisuda")}>
+                Katalog Wisuda
+              </button>
+              <button type="button" className={folioTab === "prewisuda" ? "is-on" : ""} onClick={() => setFolioTab("prewisuda")}>
+                Katalog Pre-wisuda
+              </button>
+            </div>
           </div>
           <div className="folio-grid">
-            {portfolio.map((photo) => (
+            {activeFolio.map((photo) => (
               <button type="button" key={photo.src} onClick={() => openLightbox(photo)}>
-                <img src={photo.src} alt={photo.alt} />
+                <img src={photo.src} alt={photo.alt} loading="lazy" />
               </button>
             ))}
           </div>
@@ -659,12 +886,27 @@ export default function App() {
           <div className="faq-head">
             <h2>Pertanyaan yang Sering Diajukan</h2>
           </div>
-          <div className="faq-grid">
-            {faqs.map((item) => (
-              <article key={item.question}>
-                <h3>{item.question}</h3>
-                <p>{item.answer}</p>
-              </article>
+          <div className="faq-groups">
+            {faqGroups.map((group) => (
+              <section key={group.title}>
+                <h3>{group.title}</h3>
+                {group.items.map((item) => {
+                  const open = openFaq === item.question;
+                  return (
+                    <article key={item.question} className={open ? "is-open" : ""}>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => setOpenFaq(open ? "" : item.question)}
+                      >
+                        {item.question}
+                        <span aria-hidden="true">{open ? "−" : "+"}</span>
+                      </button>
+                      {open ? <p>{item.answer}</p> : null}
+                    </article>
+                  );
+                })}
+              </section>
             ))}
           </div>
           <div className="consult">
@@ -680,6 +922,51 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {muaPrompt ? (
+        <div className="popup" role="dialog" aria-modal="true" aria-label="Include Paket MUA">
+          <div className="popup-card">
+            <p className="eyebrow">Paket Sekejap</p>
+            <h2>Tambah Include Paket MUA?</h2>
+            <p>
+              Paket Sempurna bisa ditambahkan di dalam Sekejap. Makeup Anadevi ikut terpesan, dan pesan WhatsApp
+              mencantumkan “include paket MUA”. Tambahan {rupiah(MUA_ADDON_PRICE)}, DP minimum {rupiah(MUA_DP)}.
+            </p>
+            <div className="popup-actions">
+              <button
+                className="btn btn-forest"
+                type="button"
+                onClick={() => {
+                  setIncludeMua(true);
+                  setMuaPrompt(false);
+                }}
+              >
+                Include Paket MUA
+              </button>
+              <button className="btn btn-white" type="button" onClick={() => setMuaPrompt(false)}>
+                Tidak sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="float-stack">
+        {showTop ? (
+          <button className="float-btn float-top" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+            Ke atas
+          </button>
+        ) : null}
+        <button className="float-btn float-book" type="button" onClick={() => scrollToId("booking")}>
+          Book now
+        </button>
+        <a className="float-btn float-wa" href={`https://wa.me/${SERAYE_WHATSAPP}`} target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3zm4.8 12.6c-.2.6-1.2 1.1-1.7 1.1-.4 0-.9.2-3.1-.7-2.6-1-4.2-3.6-4.3-3.8-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .8 2.1.1.1 0 .3-.1.5l-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.6-.7c.2-.2.3-.2.6-.1.2.1 1.6.8 1.9.9.3.1.4.2.5.3.1.3 0 .8-.2 1.2z" />
+          </svg>
+          Chat admin
+        </a>
+      </div>
 
       {lightbox ? (
         <div

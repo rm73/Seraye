@@ -94,7 +94,7 @@ function seedState() {
         whatsapp: "082167890044",
         date: next,
         startTime: "13:00",
-        packageId: "selaras",
+        packageId: "sekawan",
         location: "Kampus ITS Surabaya",
         notes: "Butuh video portrait.",
         photographer: "A",
@@ -194,8 +194,8 @@ function buildRecord(input, existing) {
   const name = cleanText(input.name, 80);
   const whatsapp = cleanText(input.whatsapp, 20);
   const location = cleanText(input.location, 160);
-  if (name.length < 3 || whatsapp.length < 10 || location.length < 3) {
-    throw new Error("Nama, WhatsApp, dan lokasi wajib diisi.");
+  if (name.length < 3 || whatsapp.length < 10) {
+    throw new Error("Nama dan WhatsApp wajib diisi.");
   }
   return {
     id: cleanText(input.id, 40) || existing?.id || buildBookingId({ date, startTime, code: selected.code }),
@@ -210,6 +210,15 @@ function buildRecord(input, existing) {
     minutes: packageMinutes(selected),
     location,
     notes: cleanText(input.notes, 500),
+    extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
+    includeMua: Boolean(input.includeMua),
+    makeupDate: cleanText(input.makeupDate, 10),
+    makeupTime: normalizeTime(input.makeupTime),
+    hairStyle: cleanText(input.hairStyle, 20),
+    muaAddress: cleanText(input.muaAddress, 240),
+    muaMap: cleanText(input.muaMap, 300),
+    totalPrice: Number(input.totalPrice) || selected.price,
+    bookingFee: Number(input.bookingFee) || 100000,
     photographer: existing?.photographer || "",
     source: existing?.source || (input.source === "copy" ? "copy" : input.source === "admin" ? "admin" : "whatsapp"),
     createdAt: existing?.createdAt || new Date().toISOString(),

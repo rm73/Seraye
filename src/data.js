@@ -1,19 +1,30 @@
+export const PHOTO_ADDON = 10000;
+export const STANDARD_DP = 100000;
+export const MUA_DP = 200000;
+export const MUA_ADDON_PRICE = 260000;
+
 export const packages = [
   {
-    id: "sekilas",
-    code: "SKLS",
-    name: "Sekilas",
+    id: "sempurna",
+    code: "SMPR",
+    name: "Sempurna",
     group: "photography",
-    groupLabel: "Photography",
-    price: 275000,
-    compareAt: 299000,
+    groupLabel: "Katalog Semarak",
+    price: 589000,
+    compareAt: 629000,
+    highlight: true,
+    specialOffer: true,
+    includesMua: true,
+    image: "/assets/SempurnaCard.jpg",
     points: [
       "1 Graduate",
-      "45 Minutes",
-      "15 Edited Photo",
-      "Up to 2 Friends/Family (Add-on +50K)",
+      "60 Minutes",
+      "25 Edited Photo",
+      "Reguler Makeup by Anadevi (75 Menit)",
+      "Free Transport MUA (Bandung Kota)",
+      "Unlimited People (Friends & Family)",
       "Unlimited Spot & Shoot",
-      "Recommendation Styling",
+      "Personalized Moodboard & Styling",
     ],
   },
   {
@@ -21,10 +32,13 @@ export const packages = [
     code: "SKJP",
     name: "Sekejap",
     group: "photography",
-    groupLabel: "Photography",
+    groupLabel: "Katalog Semarak",
     price: 329000,
     compareAt: 350000,
     bestSeller: true,
+    highlight: true,
+    muaAddon: true,
+    image: "/assets/sekejapcard.jpg",
     points: [
       "1 Graduate",
       "60 Minutes",
@@ -35,13 +49,32 @@ export const packages = [
     ],
   },
   {
+    id: "sekilas",
+    code: "SKLS",
+    name: "Sekilas",
+    group: "photography",
+    groupLabel: "Katalog Semarak",
+    price: 275000,
+    compareAt: 299000,
+    image: "/assets/SekilasCard.png",
+    points: [
+      "1 Graduate",
+      "45 Minutes",
+      "15 Edited Photo",
+      "Up to 2 Friends/Family (Add-on +50K)",
+      "Unlimited Spot & Shoot",
+      "Recommendation Styling",
+    ],
+  },
+  {
     id: "sejenak",
     code: "SJNK",
     name: "Sejenak",
     group: "photography",
-    groupLabel: "Photography",
+    groupLabel: "Katalog Semarak",
     price: 429000,
     compareAt: 450000,
+    image: "/assets/Sejenakcard.png",
     points: [
       "1 Graduate",
       "90 Minutes",
@@ -52,13 +85,14 @@ export const packages = [
     ],
   },
   {
-    id: "sekawan",
-    code: "SKWN",
-    name: "Sekawan",
+    id: "sekisah",
+    code: "SKSH",
+    name: "Sekisah",
     group: "videography",
-    groupLabel: "Videography",
-    price: 250000,
-    compareAt: 350000,
+    groupLabel: "Katalog Selangkah",
+    price: 249000,
+    compareAt: 299000,
+    image: "/assets/SekisahCard.jpg",
     points: [
       "1 Graduate",
       "30 Minutes",
@@ -70,18 +104,19 @@ export const packages = [
     ],
   },
   {
-    id: "selaras",
-    code: "SLRS",
-    name: "Selaras",
+    id: "sekawan",
+    code: "SKWN",
+    name: "Sekawan",
     group: "videography",
-    groupLabel: "Videography",
-    price: 350000,
-    compareAt: 450000,
+    groupLabel: "Katalog Selangkah",
+    price: 349000,
+    compareAt: 399000,
+    image: "/assets/SekawanCard.jpg",
     points: [
-      "1 Graduate",
+      "2-3 Graduate",
       "60 Minutes",
       "All raw photo",
-      "1 video portrait/landscape edited (1 menit)",
+      "1 video portrait/landscape edited (60s)",
       "Unlimited People (Friends & Family)",
       "Unlimited Spot & Shoot",
       "Personalized Moodboard & Styling",
@@ -89,44 +124,85 @@ export const packages = [
   },
 ];
 
-export const portfolio = [
-  { src: "/assets/folio-01.png", alt: "Wisuda outdoor di kampus" },
-  { src: "/assets/folio-02.png", alt: "Potret studio wisudawan" },
-  { src: "/assets/folio-03.png", alt: "Foto bersama sahabat" },
-  { src: "/assets/folio-04.png", alt: "Foto keluarga wisuda" },
-  { src: "/assets/folio-05.png", alt: "Potret solo outdoor" },
-  { src: "/assets/folio-06.png", alt: "Potret duo studio" },
-  { src: "/assets/folio-07.png", alt: "Foto kelompok lebar" },
-  { src: "/assets/folio-08.png", alt: "Detail outdoor" },
-  { src: "/assets/folio-09.png", alt: "Acara keluarga" },
-  { src: "/assets/folio-10.png", alt: "Potret studio solo" },
-  { src: "/assets/folio-11.png", alt: "Kebersamaan sahabat" },
-  { src: "/assets/folio-12.png", alt: "Sesi senja outdoor" },
-];
-
-export const faqs = [
+export const faqGroups = [
   {
-    question: "Bisa request lokasi dimana saja?",
-    answer:
-      "Area Kota Bandung dan sekitarnya tentunya bisa dijangkau oleh rekan Seraye, silahkan diskusikan untuk titik temu dengan admin kami untuk tindak lanjut booking.",
+    title: "Pertanyaan Seputar Booking & Konsep",
+    items: [
+      {
+        question: "Apakah saya bisa menentukan konsep fotonya?",
+        answer:
+          "Tentu! Setelah kamu melakukan pembayaran DP, tim Seraye akan berdiskusi dan membuatkan personalized moodboard khusus untukmu. Referensi gaya, vibe, dan tone warna ini akan menjadi panduan agar hasil foto nanti benar-benar terkonsep dan sesuai dengan keinginanmu.",
+      },
+      {
+        question: "Bagaimana sistem pembayaran dan pembatalannya?",
+        answer:
+          "Untuk mengunci jadwal (fix booking), dikenakan DP sebesar Rp 100.000. Untuk Paket Sempurna atau pesanan yang include Paket MUA, DP minimum Rp 200.000 karena jadwal fotografer dan MUA dikunci bersamaan. DP bersifat non-refundable (hangus jika klien membatalkan sepihak). Sisa pelunasan wajib dibayarkan maksimal H-1 sebelum sesi foto. Apabila pembatalan dilakukan setelah pelunasan atau pada Hari H, seluruh dana tidak dapat dikembalikan.",
+      },
+      {
+        question: "Apakah jadwal foto bisa diubah (reschedule)?",
+        answer:
+          "Bisa! Reschedule diperbolehkan maksimal 1x dengan pengajuan paling lambat H-3 sebelum sesi, dan persetujuannya bergantung pada ketersediaan jadwal fotografer kami.",
+      },
+    ],
   },
   {
-    question: "Apakah ada arahan gaya/pose (directing) saat sesi pemotretan?",
-    answer:
-      "Pasti ada. Tim Seraye Moments memandu secara inisiatif dan kolaboratif dengan client. Tidak ada pose kaku, kami mengutamakan nuansa hangat, natural, dan gestur spontan.",
+    title: "Pertanyaan Seputar Pelaksanaan Sesi",
+    items: [
+      {
+        question: "Bisa request lokasi dimana saja?",
+        answer:
+          "Area Kota Bandung dan sekitarnya tentunya bisa dijangkau oleh rekan Seraye, silahkan diskusikan untuk titik temu dengan admin kami untuk tindak lanjut booking.",
+      },
+      {
+        question: "Bagaimana jika saya datang terlambat di Hari H?",
+        answer:
+          "Kami sangat menyarankan kamu untuk bersiap 15 - 30 menit sebelum sesi dan sudah berada di meeting point. Keterlambatan lebih dari 15 menit dari jadwal akan otomatis mengurangi total durasi sesi fotomu.",
+      },
+      {
+        question: "Bolehkah mengajak keluarga besar dan bestie?",
+        answer:
+          "Sangat diperbolehkan sesuai dengan jumlah keterangan katalog untuk keluarga maupun sahabat. Foto formasi keluarga, teman satu geng, hingga foto solo sudah tercakup dalam durasi sesi.",
+      },
+      {
+        question: "Apakah ada arahan gaya/pose (directing) saat sesi pemotretan?",
+        answer:
+          "Pasti ada. Tim Seraye Moments memandu secara inisiatif dan kolaboratif dengan client. Tidak ada pose kaku, kami mengutamakan nuansa hangat, natural, dan gestur spontan.",
+      },
+      {
+        question: "Apakah saya bisa menambah waktu foto (extend) di lokasi?",
+        answer:
+          "Bisa banget! Jika kamu merasa butuh waktu lebih saat di lokasi, penambahan waktu (extend) akan dikenakan biaya Rp 50.000 per 30 menit.",
+      },
+    ],
   },
   {
-    question: "Bolehkah mengajak keluarga besar dan bestie?",
-    answer:
-      "Sangat diperbolehkan sesuai dengan jumlah keterangan katalog untuk keluarga maupun sahabat. Foto formasi keluarga, teman satu geng, hingga foto solo sudah tercakup dalam durasi sesi.",
+    title: "Pertanyaan Seputar Hasil Foto",
+    items: [
+      {
+        question: "Berapa lama hasil foto akan dikirim?",
+        answer:
+          "Pengiriman hasil dilakukan bertahap. Pada H+3 kamu akan menerima 5 Foto Highlight + Raw File. Kemudian pada H+7, kami akan mengirimkan Sisa Editan beserta Bonusnya.",
+      },
+      {
+        question: "Apakah bisa menambah jumlah foto yang diedit?",
+        answer:
+          "Tentu, kamu bisa melakukan Add-On Edit Foto dengan biaya hanya Rp 10.000 per foto tambahan.",
+      },
+      {
+        question: "Apakah foto saya akan diposting di media sosial Seraye Moments?",
+        answer:
+          "Kami percaya setiap momen patut dirayakan. Seraye Moments akan turut membagikan keindahan momenmu (hasil foto/video) sebagai bagian dari portofolio dan apresiasi karya di media sosial kami.",
+      },
+    ],
   },
 ];
 
 export const terms = [
-  "DP (Booking Fee) Rp 100.000 bersifat non-refundable (tidak bisa kembali/hangus) untuk fix booking.",
+  "DP (Booking Fee) Rp 100.000 bersifat non-refundable untuk fix booking. Paket Sempurna atau pesanan include Paket MUA memakai DP minimum Rp 200.000.",
   "Pelunasan wajib H-1 (satu hari) sebelum sesi.",
   "Reschedule hanya 1x, dengan konfirmasi paling lambat H-3 (tiga hari) sebelum sesi.",
   "Keterlambatan klien lebih dari 15 menit akan mengurangi total durasi sesi.",
   "Pengiriman hasil: H+3 (5 Foto Highlight + Raw) dan H+7 (Sisa Editan + Bonus).",
-  "Add-On Edit Foto: Rp 10.000/foto.",
+  "Add-On Edit Foto: Rp 10.000/foto, khusus Paket Sempurna.",
+  "Jika ada kendala dalam pembokingan, hubungi admin.",
 ];

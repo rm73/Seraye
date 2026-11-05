@@ -10,17 +10,44 @@ export function buildBookingId({ date, startTime, code }) {
   return `${day}${month}${year}${start}${code}`;
 }
 
-export function buildWhatsAppMessage({ name, bookingId, location, notes }) {
-  const pesan = notes.trim() || "-";
-  return [
+export function buildWhatsAppMessage({
+  name,
+  bookingId,
+  location,
+  notes,
+  packageName,
+  includeMua,
+  extraPhotos,
+  extraPhotoFee,
+  makeupDate,
+  makeupTime,
+  hairStyle,
+  muaAddress,
+  muaMap,
+  total,
+  dp,
+}) {
+  const lines = [
     `Halo Min, saya sudah booking atas nama ${name.trim()} dengan detail pemesanan seperti berikut.`,
     "",
     `ID Pemesanan: ${bookingId}`,
-    `Titik Lokasi: ${location.trim()}`,
-    `Pesan: ${pesan}`,
+    packageName ? `Paket: ${packageName}` : "",
+    includeMua ? "Include Paket MUA" : "",
+    extraPhotos ? `Add-on edit foto: ${extraPhotos} foto (${rupiah(extraPhotoFee)})` : "",
+    `Titik Lokasi: ${location.trim() || "-"}`,
+    makeupDate ? `Tanggal make up: ${makeupDate}` : "",
+    makeupTime ? `Jam make up: ${makeupTime}` : "",
+    hairStyle ? `Hijabdo/Hairdo: ${hairStyle}` : "",
+    muaAddress ? `Alamat lengkap MUA: ${muaAddress}` : "",
+    muaMap ? `Google Maps: ${muaMap}` : "",
+    `Pesan: ${notes.trim() || "-"}`,
+    total ? `Total: ${rupiah(total)}` : "",
+    dp ? `DP: ${rupiah(dp)}` : "",
     "",
+    "Jika ada kendala dalam pembokingan bisa menghubungi admin.",
     "Ditunggu konfirmasi lebih lanjutnya, Min.",
-  ].join("\n");
+  ];
+  return lines.filter((line, index) => line !== "" || lines[index - 1] !== "").join("\n");
 }
 
 export function buildWhatsAppUrl(message) {
