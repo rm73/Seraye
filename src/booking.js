@@ -1,7 +1,7 @@
 import { SERAYE_WHATSAPP } from "./config";
 
 export function rupiah(amount) {
-  return `Rp ${amount.toLocaleString("id-ID")}`;
+  return `Rp${Number(amount).toLocaleString("id-ID")}`;
 }
 
 export function buildBookingId({ date, startTime, code }) {

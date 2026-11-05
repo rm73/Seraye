@@ -10,7 +10,7 @@ import {
   setAdminToken,
 } from "./api";
 import { packages } from "./data";
-import { averageRating, readFeedback } from "./feedback";
+import { readFeedback } from "./feedback";
 import {
   addMinutes,
   bookingIsInFullBlock,
@@ -196,8 +196,6 @@ export default function AdminApp() {
         </div>
       </header>
 
-      <FeedbackBoard />
-
       {error ? <p className="admin-error">{error}</p> : null}
       {notice ? <p className="admin-notice">{notice}</p> : null}
 
@@ -328,6 +326,7 @@ export default function AdminApp() {
           />
         ))
       )}
+      <FeedbackBoard />
     </main>
   );
 }
@@ -335,22 +334,18 @@ export default function AdminApp() {
 function FeedbackBoard() {
   const items = readFeedback();
   return (
-    <section className="admin-block">
-      <h2>Penilaian pelanggan</h2>
-      <p>
-        Seraye Moments {averageRating(items, "service") || "-"} / 5 · Website {averageRating(items, "website") || "-"} / 5 · {items.length} penilaian
-      </p>
+    <details className="admin-block admin-feedback">
+      <summary>Penilaian pelanggan</summary>
       <div className="rating-list">
         {items.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
         {items.map((item) => (
           <article key={item.id}>
-            <strong>{item.name || "Tanpa nama"}</strong>
-            <span>Seraye {item.service}/5 · Website {item.website}/5</span>
+            <span>Seraye Moments {item.service}/5 · Website Seraye {item.website}/5</span>
             <p>{item.message || "—"}</p>
           </article>
         ))}
       </div>
-    </section>
+    </details>
   );
 }
 

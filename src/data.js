@@ -16,6 +16,11 @@ export const packages = [
     specialOffer: true,
     includesMua: true,
     image: "/assets/SempurnaCard.jpg",
+    cardPoints: [
+      "Base Paket Sekejap",
+      "Reguler Makeup by Anadevi (75 Menit)",
+      "Free Transport MUA (Bandung Kota)",
+    ],
     points: [
       "1 Graduate",
       "60 Minutes",
@@ -136,7 +141,7 @@ export const faqGroups = [
       {
         question: "Bagaimana sistem pembayaran dan pembatalannya?",
         answer:
-          "Untuk mengunci jadwal (fix booking), dikenakan DP sebesar Rp 100.000. Untuk Paket Sempurna atau pesanan yang include Paket MUA, DP minimum Rp 200.000 karena jadwal fotografer dan MUA dikunci bersamaan. DP bersifat non-refundable (hangus jika klien membatalkan sepihak). Sisa pelunasan wajib dibayarkan maksimal H-1 sebelum sesi foto. Apabila pembatalan dilakukan setelah pelunasan atau pada Hari H, seluruh dana tidak dapat dikembalikan.",
+          "Untuk mengunci jadwal (fix booking), dikenakan DP sebesar Rp100.000. Untuk Paket Sempurna, DP minimum Rp200.000 karena jadwal fotografer dan MUA dikunci bersamaan. DP bersifat non-refundable (hangus jika klien membatalkan sepihak). Sisa pelunasan wajib dibayarkan maksimal H-1 sebelum sesi foto. Apabila pembatalan dilakukan setelah pelunasan atau pada Hari H, seluruh dana tidak dapat dikembalikan.",
       },
       {
         question: "Apakah jadwal foto bisa diubah (reschedule)?",
@@ -171,7 +176,7 @@ export const faqGroups = [
       {
         question: "Apakah saya bisa menambah waktu foto (extend) di lokasi?",
         answer:
-          "Bisa banget! Jika kamu merasa butuh waktu lebih saat di lokasi, penambahan waktu (extend) akan dikenakan biaya Rp 50.000 per 30 menit.",
+          "Bisa banget! Jika kamu merasa butuh waktu lebih saat di lokasi, penambahan waktu (extend) akan dikenakan biaya Rp50.000 per 30 menit.",
       },
     ],
   },
@@ -186,7 +191,7 @@ export const faqGroups = [
       {
         question: "Apakah bisa menambah jumlah foto yang diedit?",
         answer:
-          "Tentu, kamu bisa melakukan Add-On Edit Foto dengan biaya hanya Rp 10.000 per foto tambahan.",
+          "Tentu, kamu bisa melakukan Add-On Edit Foto di paket mana pun dengan biaya Rp10.000 per foto tambahan. Jumlahnya bisa ditambah atau dikurangi, dan tidak wajib.",
       },
       {
         question: "Apakah foto saya akan diposting di media sosial Seraye Moments?",
@@ -198,11 +203,10 @@ export const faqGroups = [
 ];
 
 export const terms = [
-  "DP (Booking Fee) Rp 100.000 bersifat non-refundable untuk fix booking. Paket Sempurna atau pesanan include Paket MUA memakai DP minimum Rp 200.000.",
-  "Pelunasan wajib H-1 (satu hari) sebelum sesi.",
-  "Reschedule hanya 1x, dengan konfirmasi paling lambat H-3 (tiga hari) sebelum sesi.",
-  "Keterlambatan klien lebih dari 15 menit akan mengurangi total durasi sesi.",
-  "Pengiriman hasil: H+3 (5 Foto Highlight + Raw) dan H+7 (Sisa Editan + Bonus).",
-  "Add-On Edit Foto: Rp 10.000/foto, khusus Paket Sempurna.",
-  "Jika ada kendala dalam pembokingan, hubungi admin.",
+  "Apabila terjadi pembatalan (cancel) reservasi dari pihak klien, maka uang deposit/DP hangus (tidak dapat di-refund).",
+  "Batas maksimal untuk pengajuan reschedule (ubah jadwal) adalah H-3 sebelum sesi foto, dan sangat bergantung pada ketersediaan fotografer kami.",
+  "Pelunasan pembayaran wajib dilakukan maksimal H-1 sebelum sesi foto.",
+  "Apabila pembatalan dilakukan setelah pelunasan atau pada Hari H, maka seluruh dana yang telah dibayarkan tidak dapat dikembalikan.",
+  "Jika ada penambahan waktu (extend) pada saat Hari H, maka akan dikenakan biaya tambahan sebesar Rp50.000 / 30 menit.",
+  "Mohon mempersiapkan diri sekitar 15 - 30 menit sebelum sesi foto dan sudah berada di meeting point yang ditentukan agar waktu foto lebih maksimal.",
 ];
