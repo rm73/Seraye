@@ -16,6 +16,14 @@ import { SERAYE_WHATSAPP } from "./config";
 
 const defaultPackageId = "sekejap";
 const logoSrc = "/assets/logo%20seraye%20moments%20-%20Gold%20(1).png";
+const heroSlides = [
+  "/assets/opt/wisuda/DSC01584.webp",
+  "/assets/opt/wisuda/DSC01480.webp",
+  "/assets/opt/prewisuda/DSC02997.webp",
+  "/assets/opt/wisuda/10-DSC00836.webp",
+  "/assets/opt/prewisuda/DSC03053.webp",
+  "/assets/opt/wisuda/DSC00942.webp",
+];
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -38,8 +46,8 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false }) {
     <article className={classes} onClick={quiet ? undefined : onSelect}>
       {item.bestSeller ? <p className="ribbon">Best Seller</p> : null}
       {item.specialOffer ? <p className="ribbon">Special Offer</p> : null}
-      {item.image ? <img className="pkg-photo" src={item.image} alt="" /> : null}
-      {item.id === "sempurna" ? <img className="anadevi-mark" src="/assets/circle%20anadevi.jpeg" alt="Anadevi" /> : null}
+      {item.image ? <img className="pkg-photo" src={item.image} alt="" loading="lazy" decoding="async" /> : null}
+      {item.id === "sempurna" ? <img className="anadevi-mark" src="/assets/opt/cards/circle%20anadevi.webp" alt="Anadevi" loading="lazy" decoding="async" /> : null}
       <div className="pkg-body">
         <h3>{item.name}</h3>
         {item.id === "sempurna" ? (
@@ -69,6 +77,77 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false }) {
         </button>
       )}
     </article>
+  );
+}
+
+function Hero({ onCatalog }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (media.matches || heroSlides.length < 2) return undefined;
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % heroSlides.length);
+    }, 4800);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function step(direction) {
+    setIndex((current) => (current + direction + heroSlides.length) % heroSlides.length);
+  }
+
+  return (
+    <section className="hero" aria-roledescription="carousel" aria-label="Seraye Moments">
+      <div className="hero-frame">
+        {heroSlides.map((src, slideIndex) => (
+          <img
+            key={src}
+            src={src}
+            alt=""
+            className={slideIndex === index ? "hero-slide is-active" : "hero-slide"}
+            loading={slideIndex === 0 ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={slideIndex === 0 ? "high" : "low"}
+          />
+        ))}
+        <div className="hero-shade" />
+        <button className="hero-nav hero-nav-prev" type="button" aria-label="Foto sebelumnya" onClick={() => step(-1)}>
+          <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
+        </button>
+        <button className="hero-nav hero-nav-next" type="button" aria-label="Foto berikutnya" onClick={() => step(1)}>
+          <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
+        </button>
+        <div className="hero-copy">
+          <p className="hero-hello">
+            Hello,
+            <br />
+            We Are Seraye Moments
+          </p>
+          <p className="hero-lead">Abadikan setiap momen terbaikmu dengan cara yang terbaik</p>
+          <p className="hero-cta">Karena setiap momen patut dirayakan</p>
+          <div className="hero-actions">
+            <button className="btn btn-forest" type="button" onClick={onCatalog}>
+              Lihat selengkapnya
+            </button>
+            <button className="btn btn-pricelist" type="button" onClick={onCatalog}>
+              Cek pricelist
+            </button>
+          </div>
+          <div className="hero-dots">
+            {heroSlides.map((src, slideIndex) => (
+              <button
+                key={src}
+                type="button"
+                className={slideIndex === index ? "is-active" : ""}
+                aria-label={`Foto ${slideIndex + 1}`}
+                aria-current={slideIndex === index ? "true" : undefined}
+                onClick={() => setIndex(slideIndex)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -448,6 +527,7 @@ export default function App() {
       </header>
 
       <main>
+        <Hero onCatalog={() => scrollToId("paket")} />
         <section className="catalog" id="paket">
           <div className="catalog-block">
             <div className="catalog-title">
@@ -819,8 +899,15 @@ export default function App() {
               </summary>
               <div className="folio-masonry">
                 {group.photos.map((photo) => (
-                  <button type="button" key={photo.src} onClick={() => openLightbox(photo)}>
-                    <img src={photo.src} alt={photo.alt} loading="lazy" />
+                  <button type="button" key={photo.src} onClick={() => openLightbox({ ...photo, src: photo.full || photo.src })}>
+                    <img
+                      src={photo.src}
+                      alt={photo.alt}
+                      width={photo.width}
+                      height={photo.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </button>
                 ))}
               </div>
@@ -890,7 +977,12 @@ export default function App() {
       {muaPrompt && sempurna ? (
         <div className="popup" role="dialog" aria-modal="true" aria-label="Tambah Paket MUA">
           <div className="popup-card">
-            <h2>Tambah Paket MUA?</h2>
+            <div className="popup-head">
+              <h2>Tambah Paket MUA?</h2>
+              <button className="popup-close" type="button" aria-label="Tutup" onClick={() => setMuaPrompt(false)}>
+                ×
+              </button>
+            </div>
             <PackageCard item={sempurna} quiet onSelect={() => {}} onBook={() => {}} />
             <div className="popup-actions">
               <button
@@ -903,7 +995,7 @@ export default function App() {
               >
                 Tambahkan
               </button>
-              <button className="btn btn-white" type="button" onClick={() => setMuaPrompt(false)}>
+              <button className="btn btn-decline" type="button" onClick={() => setMuaPrompt(false)}>
                 Tidak sekarang
               </button>
             </div>

@@ -15,7 +15,7 @@ export const packages = [
     highlight: true,
     specialOffer: true,
     includesMua: true,
-    image: "/assets/SempurnaCard.jpg",
+    image: "/assets/opt/cards/SempurnaCard.webp",
     cardPoints: [
       "Base Paket Sekejap",
       "Reguler Makeup by Anadevi (75 Menit)",
@@ -43,7 +43,7 @@ export const packages = [
     bestSeller: true,
     highlight: true,
     muaAddon: true,
-    image: "/assets/sekejapcard.jpg",
+    image: "/assets/opt/cards/sekejapcard.webp",
     points: [
       "1 Graduate",
       "60 Minutes",
@@ -61,7 +61,7 @@ export const packages = [
     groupLabel: "Katalog Semarak",
     price: 275000,
     compareAt: 299000,
-    image: "/assets/SekilasCard.png",
+    image: "/assets/opt/cards/SekilasCard.webp",
     points: [
       "1 Graduate",
       "45 Minutes",
@@ -79,7 +79,7 @@ export const packages = [
     groupLabel: "Katalog Semarak",
     price: 429000,
     compareAt: 450000,
-    image: "/assets/Sejenakcard.png",
+    image: "/assets/opt/cards/Sejenakcard.webp",
     points: [
       "1 Graduate",
       "90 Minutes",
@@ -97,7 +97,7 @@ export const packages = [
     groupLabel: "Katalog Selangkah",
     price: 249000,
     compareAt: 299000,
-    image: "/assets/SekisahCard.jpg",
+    image: "/assets/opt/cards/SekisahCard.webp",
     points: [
       "1 Graduate",
       "30 Minutes",
@@ -116,7 +116,7 @@ export const packages = [
     groupLabel: "Katalog Selangkah",
     price: 349000,
     compareAt: 399000,
-    image: "/assets/SekawanCard.jpg",
+    image: "/assets/opt/cards/SekawanCard.webp",
     points: [
       "2-3 Graduate",
       "60 Minutes",

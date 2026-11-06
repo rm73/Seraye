@@ -1,317 +1,551 @@
 export const wisudaPortfolio = [
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/1-DSC00982.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/1-DSC00982.webp",
+    full: "/assets/opt/wisuda/1-DSC00982.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/10-DSC00836.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/10-DSC00836.webp",
+    full: "/assets/opt/wisuda/10-DSC00836.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/11-DSC00830.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/11-DSC00830.webp",
+    full: "/assets/opt/wisuda/11-DSC00830.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/12-DSC00826.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/12-DSC00826.webp",
+    full: "/assets/opt/wisuda/12-DSC00826.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/13-DSC00823.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/13-DSC00823.webp",
+    full: "/assets/opt/wisuda/13-DSC00823.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/14-DSC00818.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/14-DSC00818.webp",
+    full: "/assets/opt/wisuda/14-DSC00818.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1081,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/15-DSC00805.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/15-DSC00805.webp",
+    full: "/assets/opt/wisuda/15-DSC00805.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/16-DSC00801.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/16-DSC00801.webp",
+    full: "/assets/opt/wisuda/16-DSC00801.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/2-DSC00965.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/2-DSC00965.webp",
+    full: "/assets/opt/wisuda/2-DSC00965.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/3-DSC00946.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/3-DSC00946.webp",
+    full: "/assets/opt/wisuda/3-DSC00946.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/4-DSC00914.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/4-DSC00914.webp",
+    full: "/assets/opt/wisuda/4-DSC00914.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/5-DSC00913.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/5-DSC00913.webp",
+    full: "/assets/opt/wisuda/5-DSC00913.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/6-DSC00879.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/6-DSC00879.webp",
+    full: "/assets/opt/wisuda/6-DSC00879.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/7-DSC00872.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/7-DSC00872.webp",
+    full: "/assets/opt/wisuda/7-DSC00872.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/8-DSC00859.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/8-DSC00859.webp",
+    full: "/assets/opt/wisuda/8-DSC00859.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/9-DSC00843.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/9-DSC00843.webp",
+    full: "/assets/opt/wisuda/9-DSC00843.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00814.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00814.webp",
+    full: "/assets/opt/wisuda/DSC00814.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00817.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00817.webp",
+    full: "/assets/opt/wisuda/DSC00817.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00823.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00823.webp",
+    full: "/assets/opt/wisuda/DSC00823.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00825.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00825.webp",
+    full: "/assets/opt/wisuda/DSC00825.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00838.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00838.webp",
+    full: "/assets/opt/wisuda/DSC00838.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00846.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00846.webp",
+    full: "/assets/opt/wisuda/DSC00846.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00868.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00868.webp",
+    full: "/assets/opt/wisuda/DSC00868.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00874.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00874.webp",
+    full: "/assets/opt/wisuda/DSC00874.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00906.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00906.webp",
+    full: "/assets/opt/wisuda/DSC00906.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00913.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00913.webp",
+    full: "/assets/opt/wisuda/DSC00913.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00929.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00929.webp",
+    full: "/assets/opt/wisuda/DSC00929.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00931.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00931.webp",
+    full: "/assets/opt/wisuda/DSC00931.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00934.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00934.webp",
+    full: "/assets/opt/wisuda/DSC00934.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00942.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00942.webp",
+    full: "/assets/opt/wisuda/DSC00942.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00946.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00946.webp",
+    full: "/assets/opt/wisuda/DSC00946.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00949.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00949.webp",
+    full: "/assets/opt/wisuda/DSC00949.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00950.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00950.webp",
+    full: "/assets/opt/wisuda/DSC00950.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00963.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00963.webp",
+    full: "/assets/opt/wisuda/DSC00963.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00965.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00965.webp",
+    full: "/assets/opt/wisuda/DSC00965.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC00967.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC00967.webp",
+    full: "/assets/opt/wisuda/DSC00967.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01178.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01178.webp",
+    full: "/assets/opt/wisuda/DSC01178.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01181.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01181.webp",
+    full: "/assets/opt/wisuda/DSC01181.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01196.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01196.webp",
+    full: "/assets/opt/wisuda/DSC01196.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01205.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01205.webp",
+    full: "/assets/opt/wisuda/DSC01205.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01206.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01206.webp",
+    full: "/assets/opt/wisuda/DSC01206.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01210.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01210.webp",
+    full: "/assets/opt/wisuda/DSC01210.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01359.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01359.webp",
+    full: "/assets/opt/wisuda/DSC01359.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01379.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01379.webp",
+    full: "/assets/opt/wisuda/DSC01379.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01417.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01417.webp",
+    full: "/assets/opt/wisuda/DSC01417.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01434.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01434.webp",
+    full: "/assets/opt/wisuda/DSC01434.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01436.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01436.webp",
+    full: "/assets/opt/wisuda/DSC01436.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01461.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01461.webp",
+    full: "/assets/opt/wisuda/DSC01461.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01463.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01463.webp",
+    full: "/assets/opt/wisuda/DSC01463.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01480.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01480.webp",
+    full: "/assets/opt/wisuda/DSC01480.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01505.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01505.webp",
+    full: "/assets/opt/wisuda/DSC01505.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01507.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01507.webp",
+    full: "/assets/opt/wisuda/DSC01507.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01557%20(1).jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01557%20(1).webp",
+    full: "/assets/opt/wisuda/DSC01557%20(1).webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01570.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01570.webp",
+    full: "/assets/opt/wisuda/DSC01570.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01584.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01584.webp",
+    full: "/assets/opt/wisuda/DSC01584.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/DSC01602.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/DSC01602.webp",
+    full: "/assets/opt/wisuda/DSC01602.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/kak%20andre%20final-15.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/kak%20andre%20final-15.webp",
+    full: "/assets/opt/wisuda/kak%20andre%20final-15.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/kak%20andre%20final-16.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/kak%20andre%20final-16.webp",
+    full: "/assets/opt/wisuda/kak%20andre%20final-16.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/kak%20andre%20final-8.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/kak%20andre%20final-8.webp",
+    full: "/assets/opt/wisuda/kak%20andre%20final-8.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/WISUDA%20KAK%20FELIX(DONE)-1.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/WISUDA%20KAK%20FELIX(DONE)-1.webp",
+    full: "/assets/opt/wisuda/WISUDA%20KAK%20FELIX(DONE)-1.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1272,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/WISUDA%20KAK%20FELIX(DONE)-11.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
+    src: "/assets/opt/wisuda/thumbs/WISUDA%20KAK%20FELIX(DONE)-11.webp",
+    full: "/assets/opt/wisuda/WISUDA%20KAK%20FELIX(DONE)-11.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 405,
   },
   {
-    "src": "/assets/PORTOFOLIO%20WISUDA%20SERAYE/WISUDA%20KAK%20FELIX(DONE)-2.jpg",
-    "alt": "Portofolio wisuda Seraye Moments"
-  }
+    src: "/assets/opt/wisuda/thumbs/WISUDA%20KAK%20FELIX(DONE)-2.webp",
+    full: "/assets/opt/wisuda/WISUDA%20KAK%20FELIX(DONE)-2.webp",
+    alt: "Portofolio wisuda Seraye Moments",
+    width: 720,
+    height: 1280,
+  },
 ];
 
 export const prewisudaPortfolio = [
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02872.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02872.webp",
+    full: "/assets/opt/prewisuda/DSC02872.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02873.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02873.webp",
+    full: "/assets/opt/prewisuda/DSC02873.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02875.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02875.webp",
+    full: "/assets/opt/prewisuda/DSC02875.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02930.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02930.webp",
+    full: "/assets/opt/prewisuda/DSC02930.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02946.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02946.webp",
+    full: "/assets/opt/prewisuda/DSC02946.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02956.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02956.webp",
+    full: "/assets/opt/prewisuda/DSC02956.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02963.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02963.webp",
+    full: "/assets/opt/prewisuda/DSC02963.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02975.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02975.webp",
+    full: "/assets/opt/prewisuda/DSC02975.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02990.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02990.webp",
+    full: "/assets/opt/prewisuda/DSC02990.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02993.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02993.webp",
+    full: "/assets/opt/prewisuda/DSC02993.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02995.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02995.webp",
+    full: "/assets/opt/prewisuda/DSC02995.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02996.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02996.webp",
+    full: "/assets/opt/prewisuda/DSC02996.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC02997.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC02997.webp",
+    full: "/assets/opt/prewisuda/DSC02997.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC03004.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC03004.webp",
+    full: "/assets/opt/prewisuda/DSC03004.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC03011.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
+    src: "/assets/opt/prewisuda/thumbs/DSC03011.webp",
+    full: "/assets/opt/prewisuda/DSC03011.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 1080,
   },
   {
-    "src": "/assets/PORTOFOLIO%20PRE%20WISUDA/DSC03053.jpg",
-    "alt": "Portofolio pre-wisuda Seraye Moments"
-  }
+    src: "/assets/opt/prewisuda/thumbs/DSC03053.webp",
+    full: "/assets/opt/prewisuda/DSC03053.webp",
+    alt: "Portofolio pre-wisuda Seraye Moments",
+    width: 720,
+    height: 480,
+  },
 ];
