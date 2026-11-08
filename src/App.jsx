@@ -82,34 +82,62 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false }) {
 
 function Hero({ onCatalog }) {
   const [index, setIndex] = useState(0);
+  const [sliding, setSliding] = useState(true);
+  const slides = [...heroSlides, heroSlides[0]];
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (media.matches || heroSlides.length < 2) return undefined;
     const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % heroSlides.length);
+      setSliding(true);
+      setIndex((current) => current + 1);
     }, 4800);
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (index < heroSlides.length) return undefined;
+    const timer = window.setTimeout(() => {
+      setSliding(false);
+      setIndex(0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setSliding(true));
+      });
+    }, 760);
+    return () => window.clearTimeout(timer);
+  }, [index]);
+
   function step(direction) {
-    setIndex((current) => (current + direction + heroSlides.length) % heroSlides.length);
+    setSliding(true);
+    setIndex((current) => {
+      const count = heroSlides.length;
+      const live = current >= count ? 0 : current;
+      if (direction > 0) return live + 1;
+      return (live - 1 + count) % count;
+    });
   }
+
+  const liveIndex = index % heroSlides.length;
 
   return (
     <section className="hero" aria-roledescription="carousel" aria-label="Seraye Moments">
       <div className="hero-frame">
-        {heroSlides.map((src, slideIndex) => (
-          <img
-            key={src}
-            src={src}
-            alt=""
-            className={slideIndex === index ? "hero-slide is-active" : "hero-slide"}
-            loading={slideIndex === 0 ? "eager" : "lazy"}
-            decoding="async"
-            fetchPriority={slideIndex === 0 ? "high" : "low"}
-          />
-        ))}
+        <div
+          className={sliding ? "hero-track is-sliding" : "hero-track"}
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+          {slides.map((src, slideIndex) => (
+            <img
+              key={`${src}-${slideIndex}`}
+              src={src}
+              alt=""
+              className="hero-slide"
+              loading={slideIndex === 0 ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={slideIndex === 0 ? "high" : "low"}
+            />
+          ))}
+        </div>
         <div className="hero-shade" />
         <button className="hero-nav hero-nav-prev" type="button" aria-label="Foto sebelumnya" onClick={() => step(-1)}>
           <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
@@ -124,10 +152,10 @@ function Hero({ onCatalog }) {
             We Are Seraye Moments
           </p>
           <p className="hero-lead">Abadikan setiap momen terbaikmu dengan cara yang terbaik</p>
-          <p className="hero-cta">Karena setiap momen patut dirayakan</p>
+          <p className="hero-cta"><strong>Karena setiap momen patut dirayakan</strong></p>
           <div className="hero-actions">
             <button className="btn btn-forest" type="button" onClick={onCatalog}>
-              Lihat selengkapnya
+              Lihat katalog
             </button>
             <button className="btn btn-pricelist" type="button" onClick={onCatalog}>
               Cek pricelist
@@ -138,10 +166,13 @@ function Hero({ onCatalog }) {
               <button
                 key={src}
                 type="button"
-                className={slideIndex === index ? "is-active" : ""}
+                className={slideIndex === liveIndex ? "is-active" : ""}
                 aria-label={`Foto ${slideIndex + 1}`}
-                aria-current={slideIndex === index ? "true" : undefined}
-                onClick={() => setIndex(slideIndex)}
+                aria-current={slideIndex === liveIndex ? "true" : undefined}
+                onClick={() => {
+                  setSliding(true);
+                  setIndex(slideIndex);
+                }}
               />
             ))}
           </div>

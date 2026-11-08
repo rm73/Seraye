@@ -287,9 +287,11 @@ export default function AdminApp() {
             <button
               className="admin-reset"
               type="button"
-              onClick={() => setBlockForm((current) => ({ ...current, startTime: "", endTime: "" }))}
+              onClick={() =>
+                setBlockForm({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" })
+              }
             >
-              Reset jam
+              Reset
             </button>
           </div>
         </form>
