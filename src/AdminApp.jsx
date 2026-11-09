@@ -3,21 +3,27 @@ import {
   adminToken,
   createBlock,
   deleteAdminBooking,
+  deleteAdminMock,
+  deleteAdminPhotographer,
   deleteBlock,
   loadAdminSchedule,
   loginAdmin,
   saveAdminBooking,
+  saveAdminMock,
+  saveAdminPhotographer,
   setAdminToken,
 } from "./api";
+import { isActiveWhatsApp } from "./booking";
 import { packages } from "./data";
 import { readFeedback } from "./feedback";
 import {
   addMinutes,
   bookingIsInFullBlock,
+  DEFAULT_PHOTOGRAPHERS,
   fullIntervals,
+  normalizePhotographers,
   packageMinutes,
   photographerLabel,
-  PHOTOGRAPHERS,
   sessionLabel,
   takenPhotographers,
 } from "./schedule";
@@ -32,6 +38,24 @@ const emptyBooking = {
   location: "",
   notes: "",
   photographer: "",
+  paymentStatus: "dp",
+  mockId: "",
+};
+
+const emptyMock = {
+  id: "",
+  name: "",
+  whatsapp: "",
+  packageId: "sekejap",
+  location: "",
+  notes: "",
+};
+
+const emptyPhotographer = {
+  id: "",
+  name: "",
+  phone: "",
+  notes: "",
 };
 
 function formatDate(stamp) {
@@ -51,6 +75,12 @@ function blockSpan(block) {
   }
   if (block.endDate === block.startDate) return `${start}, ${block.startTime}–${block.endTime}`;
   return `${start} ${block.startTime} – ${end} ${block.endTime}`;
+}
+
+function whatsAppLink(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const international = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+  return `https://wa.me/${international}`;
 }
 
 function Login({ onSuccess }) {
@@ -99,16 +129,30 @@ function Login({ onSuccess }) {
 
 export default function AdminApp() {
   const [authed, setAuthed] = useState(Boolean(adminToken()));
-  const [schedule, setSchedule] = useState({ bookings: [], blocks: [], persistent: true });
+  const [schedule, setSchedule] = useState({
+    bookings: [],
+    blocks: [],
+    photographers: DEFAULT_PHOTOGRAPHERS,
+    mocks: [],
+    persistent: true,
+  });
   const [filterDate, setFilterDate] = useState("");
   const [draft, setDraft] = useState(null);
+  const [mockDraft, setMockDraft] = useState(null);
   const [blockForm, setBlockForm] = useState({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [dragOverDate, setDragOverDate] = useState("");
 
   async function refresh() {
     const data = await loadAdminSchedule();
-    setSchedule(data);
+    setSchedule({
+      bookings: data.bookings || [],
+      blocks: data.blocks || [],
+      photographers: normalizePhotographers(data.photographers),
+      mocks: Array.isArray(data.mocks) ? data.mocks : [],
+      persistent: data.persistent,
+    });
     setAuthed(true);
   }
 
@@ -136,7 +180,14 @@ export default function AdminApp() {
     let ignore = false;
     loadAdminSchedule()
       .then((data) => {
-        if (!ignore) setSchedule(data);
+        if (ignore) return;
+        setSchedule({
+          bookings: data.bookings || [],
+          blocks: data.blocks || [],
+          photographers: normalizePhotographers(data.photographers),
+          mocks: Array.isArray(data.mocks) ? data.mocks : [],
+          persistent: data.persistent,
+        });
       })
       .catch((reason) => {
         if (ignore) return;
@@ -148,6 +199,7 @@ export default function AdminApp() {
     };
   }, [authed]);
 
+  const photographers = schedule.photographers;
   const dates = useMemo(() => {
     const stamps = new Set(schedule.bookings.map((booking) => booking.date));
     return [...stamps].sort();
@@ -162,9 +214,11 @@ export default function AdminApp() {
       await action();
       await refresh();
       if (success) setNotice(success);
+      return true;
     } catch (reason) {
       setError(reason.message);
       if (!adminToken()) setAuthed(false);
+      return false;
     }
   }
 
@@ -175,11 +229,46 @@ export default function AdminApp() {
   async function submitDraft(event) {
     event.preventDefault();
     if (!draft) return;
-    const method = draft.id ? "PUT" : "POST";
+    if (!isActiveWhatsApp(draft.whatsapp)) {
+      setError("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
+      return;
+    }
+    const method = draft.id && !draft.mockId ? "PUT" : "POST";
+    const payload = {
+      ...draft,
+      id: draft.mockId ? "" : draft.id,
+      source: "admin",
+    };
     await run(async () => {
-      await saveAdminBooking(draft, method);
+      await saveAdminBooking(payload, method);
       setDraft(null);
     }, method === "POST" ? "Booking ditambahkan." : "Booking diperbarui.");
+  }
+
+  function promoteMock(mock, date = filterDate || "") {
+    setDraft({
+      ...emptyBooking,
+      name: mock.name,
+      whatsapp: mock.whatsapp,
+      packageId: mock.packageId || "sekejap",
+      location: mock.location || "",
+      notes: mock.notes || "",
+      date,
+      mockId: mock.id,
+    });
+    setNotice(date ? `Lengkapi jam untuk naikkan ${mock.name} ke booking ${formatDate(date)}.` : `Lengkapi tanggal & jam untuk naikkan ${mock.name} ke booking.`);
+  }
+
+  function onMockDrop(date, event) {
+    event.preventDefault();
+    setDragOverDate("");
+    const raw = event.dataTransfer.getData("application/seraye-mock");
+    if (!raw) return;
+    try {
+      promoteMock(JSON.parse(raw), date);
+    } catch {
+      setError("Gagal membaca mock customer.");
+    }
   }
 
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
@@ -199,136 +288,219 @@ export default function AdminApp() {
       {error ? <p className="admin-error">{error}</p> : null}
       {notice ? <p className="admin-notice">{notice}</p> : null}
 
-      <section className="admin-tools">
-        <label>
-          Tanggal
-          <input type="date" value={filterDate} onChange={(event) => setFilterDate(event.target.value)} />
-        </label>
-        <button type="button" onClick={() => setFilterDate("")}>
-          Semua tanggal
-        </button>
-        <button
-          type="button"
-          className="btn btn-forest"
-          onClick={() => setDraft({ ...emptyBooking, date: filterDate })}
-        >
-          Tambah booking
-        </button>
-      </section>
-
-      {draft ? (
-        <BookingForm
-          draft={draft}
-          bookings={schedule.bookings}
-          onChange={updateDraft}
-          onSubmit={submitDraft}
-          onCancel={() => setDraft(null)}
-        />
-      ) : null}
-
-      <section className="admin-block">
-        <h2>Tutup tanggal atau jam</h2>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            run(async () => {
-              await createBlock(blockForm);
-              setBlockForm({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" });
-            }, "Blokir tersimpan.");
-          }}
-        >
-          <label>
-            Dari tanggal
-            <input
-              type="date"
-              value={blockForm.startDate}
-              onChange={(event) => setBlockForm({ ...blockForm, startDate: event.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Sampai tanggal
-            <input
-              type="date"
-              value={blockForm.endDate}
-              onChange={(event) => setBlockForm({ ...blockForm, endDate: event.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Jam mulai
-            <input
-              type="time"
-              value={blockForm.startTime}
-              onChange={(event) => setBlockForm({ ...blockForm, startTime: event.target.value })}
-            />
-          </label>
-          <label>
-            Jam selesai
-            <input
-              type="time"
-              value={blockForm.endTime}
-              onChange={(event) => setBlockForm({ ...blockForm, endTime: event.target.value })}
-            />
-          </label>
-          <label>
-            Deskripsi
-            <input
-              value={blockForm.reason}
-              onChange={(event) => setBlockForm({ ...blockForm, reason: event.target.value })}
-              placeholder="Libur atau sudah dikunci"
-            />
-          </label>
-          <button className="btn btn-forest" type="submit">
-            Simpan blokir
-          </button>
-          <div className="admin-block-note">
-            <p className="hint">Kosongkan jam untuk menutup seharian. Isi keduanya untuk menutup rentang jam.</p>
-            <button
-              className="admin-reset"
-              type="button"
-              onClick={() =>
-                setBlockForm({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" })
-              }
-            >
-              Reset
+      <div className="admin-layout">
+        <div className="admin-main">
+          <section className="admin-tools">
+            <label>
+              Tanggal
+              <input type="date" value={filterDate} onChange={(event) => setFilterDate(event.target.value)} />
+            </label>
+            <button type="button" onClick={() => setFilterDate("")}>
+              Semua tanggal
             </button>
-          </div>
-        </form>
-        <ul>
-          {schedule.blocks.map((block) => (
-            <li key={block.id}>
-              <span>
-                {blockSpan(block)}
-                {` · ${block.reason}`}
-              </span>
-              <button type="button" onClick={() => run(() => deleteBlock(block.id), "Blokir dihapus.")}>
-                Hapus
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+            <button
+              type="button"
+              className="btn btn-forest"
+              onClick={() => setDraft({ ...emptyBooking, date: filterDate })}
+            >
+              Tambah booking
+            </button>
+            <button type="button" className="btn btn-forest" onClick={() => setMockDraft({ ...emptyMock })}>
+              Tambah mock customer
+            </button>
+          </section>
 
-      {visibleDates.length === 0 ? (
-        <p className="admin-empty">
-          Belum ada booking. Data masuk otomatis saat klien menekan Lanjutkan Booking via WhatsApp atau Salin pesan.
-        </p>
-      ) : (
-        visibleDates.map((date) => (
-          <DayBoard
-            key={date}
-            date={date}
-            bookings={schedule.bookings}
-            onEdit={(booking) => setDraft(booking)}
-            onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
-            onAssign={(booking, photographer) =>
-              run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
-            }
+          {draft ? (
+            <BookingForm
+              draft={draft}
+              bookings={schedule.bookings}
+              photographers={photographers}
+              onChange={updateDraft}
+              onSubmit={submitDraft}
+              onCancel={() => setDraft(null)}
+            />
+          ) : null}
+
+          {mockDraft ? (
+            <MockForm
+              draft={mockDraft}
+              onChange={(field, value) => setMockDraft((current) => ({ ...current, [field]: value }))}
+              onCancel={() => setMockDraft(null)}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!isActiveWhatsApp(mockDraft.whatsapp)) {
+                  setError("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
+                  return;
+                }
+                run(async () => {
+                  await saveAdminMock(mockDraft, mockDraft.id ? "PUT" : "POST");
+                  setMockDraft(null);
+                }, "Mock customer disimpan.");
+              }}
+            />
+          ) : null}
+
+          <section className="admin-block">
+            <h2>Tutup tanggal atau jam</h2>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                run(async () => {
+                  await createBlock(blockForm);
+                  setBlockForm({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" });
+                }, "Blokir tersimpan.");
+              }}
+            >
+              <label>
+                Dari tanggal
+                <input
+                  type="date"
+                  value={blockForm.startDate}
+                  onChange={(event) => setBlockForm({ ...blockForm, startDate: event.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                Sampai tanggal
+                <input
+                  type="date"
+                  value={blockForm.endDate}
+                  onChange={(event) => setBlockForm({ ...blockForm, endDate: event.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                Jam mulai
+                <input
+                  type="time"
+                  value={blockForm.startTime}
+                  onChange={(event) => setBlockForm({ ...blockForm, startTime: event.target.value })}
+                />
+              </label>
+              <label>
+                Jam selesai
+                <input
+                  type="time"
+                  value={blockForm.endTime}
+                  onChange={(event) => setBlockForm({ ...blockForm, endTime: event.target.value })}
+                />
+              </label>
+              <label>
+                Deskripsi
+                <input
+                  value={blockForm.reason}
+                  onChange={(event) => setBlockForm({ ...blockForm, reason: event.target.value })}
+                  placeholder="Libur atau sudah dikunci"
+                />
+              </label>
+              <button className="btn btn-forest" type="submit">
+                Simpan blokir
+              </button>
+              <div className="admin-block-note">
+                <p className="hint">Kosongkan jam untuk menutup seharian. Isi keduanya untuk menutup rentang jam.</p>
+                <button
+                  className="admin-reset"
+                  type="button"
+                  onClick={() =>
+                    setBlockForm({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" })
+                  }
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+            <ul>
+              {schedule.blocks.map((block) => (
+                <li key={block.id}>
+                  <span>
+                    {blockSpan(block)}
+                    {` · ${block.reason}`}
+                  </span>
+                  <button type="button" onClick={() => run(() => deleteBlock(block.id), "Blokir dihapus.")}>
+                    Hapus
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <MockBoard
+            mocks={schedule.mocks}
+            onEdit={(mock) => setMockDraft(mock)}
+            onDelete={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
+            onPromote={(mock) => promoteMock(mock, filterDate)}
           />
-        ))
-      )}
-      <FeedbackBoard />
+
+          {visibleDates.length === 0 ? (
+            <p className="admin-empty">
+              Belum ada booking. Tambah booking, naikkan mock customer (drag ke tanggal), atau tunggu klien dari situs.
+            </p>
+          ) : (
+            visibleDates.map((date) => (
+              <DayBoard
+                key={date}
+                date={date}
+                bookings={schedule.bookings}
+                photographers={photographers}
+                highlightDrop={dragOverDate === date}
+                onDragOver={(event) => {
+                  if (![...event.dataTransfer.types].includes("application/seraye-mock")) return;
+                  event.preventDefault();
+                  setDragOverDate(date);
+                }}
+                onDragLeave={() => setDragOverDate((current) => (current === date ? "" : current))}
+                onDrop={(event) => onMockDrop(date, event)}
+                onEdit={(booking) => setDraft({ ...booking, mockId: "" })}
+                onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
+                onAssign={(booking, photographer) =>
+                  run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
+                }
+                onPayment={(booking, paymentStatus) =>
+                  run(() => saveAdminBooking({ ...booking, paymentStatus }, "PUT"), "Status pembayaran diperbarui.")
+                }
+                onMoveUp={(booking, siblings) => {
+                  const index = siblings.findIndex((item) => item.id === booking.id);
+                  if (index <= 0) return;
+                  const above = siblings[index - 1];
+                  run(async () => {
+                    await saveAdminBooking({ ...booking, sortOrder: Number(above.sortOrder || 0) - 1 }, "PUT");
+                  }, "Booking dinaikkan.");
+                }}
+              />
+            ))
+          )}
+
+          {filterDate && !dates.includes(filterDate) ? (
+            <section
+              className={`admin-day admin-dropzone ${dragOverDate === filterDate ? "is-drop-target" : ""}`}
+              onDragOver={(event) => {
+                if (![...event.dataTransfer.types].includes("application/seraye-mock")) return;
+                event.preventDefault();
+                setDragOverDate(filterDate);
+              }}
+              onDragLeave={() => setDragOverDate((current) => (current === filterDate ? "" : current))}
+              onDrop={(event) => onMockDrop(filterDate, event)}
+            >
+              <header>
+                <h2>{formatDate(filterDate)}</h2>
+                <span>Drop mock customer ke sini</span>
+              </header>
+              <p className="admin-empty">Belum ada booking di tanggal ini. Drag mock customer ke atas ke area ini.</p>
+            </section>
+          ) : null}
+
+          <FeedbackBoard />
+        </div>
+
+        <PhotographerPanel
+          photographers={photographers}
+          bookings={schedule.bookings}
+          onSave={(payload, method) =>
+            run(() => saveAdminPhotographer(payload, method), method === "POST" ? "Fotografer ditambah." : "Fotografer diperbarui.")
+          }
+          onDelete={(id) => run(() => deleteAdminPhotographer(id), "Fotografer dihapus.")}
+        />
+      </div>
     </main>
   );
 }
@@ -351,34 +523,115 @@ function FeedbackBoard() {
   );
 }
 
-function DayBoard({ date, bookings, onEdit, onDelete, onAssign }) {
+function MockBoard({ mocks, onEdit, onDelete, onPromote }) {
+  return (
+    <section className="admin-block admin-mocks">
+      <h2>Mock customer</h2>
+      <p className="hint">Simpan calon client di sini, lalu drag ke atas ke daftar booking tanggal, atau klik Naikkan.</p>
+      {mocks.length === 0 ? <p className="admin-empty">Belum ada mock customer.</p> : null}
+      <ul className="admin-mock-list">
+        {mocks.map((mock) => (
+          <li
+            key={mock.id}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData("application/seraye-mock", JSON.stringify(mock));
+              event.dataTransfer.effectAllowed = "move";
+            }}
+          >
+            <div>
+              <strong>{mock.name}</strong>
+              <p>
+                <a href={whatsAppLink(mock.whatsapp)} target="_blank" rel="noreferrer">
+                  {mock.whatsapp}
+                </a>
+                {` · ${mock.packageName || mock.packageId}`}
+              </p>
+              <p>{mock.location || "Lokasi belum diisi"}</p>
+            </div>
+            <div className="admin-row-actions">
+              <button type="button" onClick={() => onPromote(mock)}>
+                Naikkan
+              </button>
+              <button type="button" onClick={() => onEdit(mock)}>
+                Ubah
+              </button>
+              <button type="button" onClick={() => onDelete(mock.id)}>
+                Hapus
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function DayBoard({
+  date,
+  bookings,
+  photographers,
+  highlightDrop,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onEdit,
+  onDelete,
+  onAssign,
+  onPayment,
+  onMoveUp,
+}) {
   const dayBookings = bookings
     .filter((booking) => booking.date === date)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const spans = fullIntervals(bookings, date);
+    .sort((a, b) => {
+      const order = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+      if (order !== 0) return order;
+      return a.startTime.localeCompare(b.startTime);
+    });
+  const spans = fullIntervals(bookings, date, photographers);
 
   return (
-    <section className="admin-day">
+    <section
+      className={`admin-day ${highlightDrop ? "is-drop-target" : ""}`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <header>
         <h2>{formatDate(date)}</h2>
         <span>{dayBookings.length} booking</span>
       </header>
       {spans.map((span) => (
         <p key={`${span.start}-${span.end}`} className="admin-full">
-          Penuh {sessionLabel(span.start, span.end)}. Tiga sesi bertumpuk, jadi klien tidak bisa memilih waktu ini.
+          Penuh {sessionLabel(span.start, span.end)}. Semua fotografer terisi, jadi klien tidak bisa memilih waktu ini.
         </p>
       ))}
       <div className="admin-table">
         {dayBookings.map((booking) => {
-          const full = bookingIsInFullBlock(booking, bookings);
+          const full = bookingIsInFullBlock(booking, bookings, photographers);
           const taken = takenPhotographers(bookings, booking.date, booking.startTime, booking.endTime, booking.id);
           return (
             <article key={booking.id} className={full ? "is-full" : ""}>
-              <div>
-                <strong>{booking.id}</strong>
-                <span className={`crew crew-${booking.photographer || "none"}`}>{photographerLabel(booking.photographer)}</span>
+              <div className="admin-booking-id">
+                <strong>ID Booking</strong>
+                <span>{booking.id}</span>
+                <label>
+                  Status bayar
+                  <select
+                    value={booking.paymentStatus === "pelunasan" ? "pelunasan" : "dp"}
+                    onChange={(event) => onPayment(booking, event.target.value)}
+                  >
+                    <option value="dp">DP</option>
+                    <option value="pelunasan">Pelunasan</option>
+                  </select>
+                </label>
               </div>
-              <p>{booking.name}</p>
+              <div>
+                <span className={`crew crew-${booking.photographer || "none"}`}>
+                  {photographerLabel(booking.photographer, photographers)}
+                </span>
+                <p>{booking.name}</p>
+              </div>
               <p>
                 <a href={whatsAppLink(booking.whatsapp)} target="_blank" rel="noreferrer">
                   {booking.whatsapp}
@@ -388,7 +641,7 @@ function DayBoard({ date, bookings, onEdit, onDelete, onAssign }) {
                 {booking.packageName} · {sessionLabel(booking.startTime, booking.endTime)} ({booking.minutes} menit)
               </p>
               <p>{booking.location || "Titik temu belum diisi"}</p>
-              <p>{booking.notes.trim() || "—"}</p>
+              <p>{booking.notes?.trim() || "—"}</p>
               {booking.includeMua ? <p>Include Paket MUA</p> : null}
               {booking.extraPhotos ? <p>Add-on edit foto: {booking.extraPhotos}</p> : null}
               {booking.makeupDate ? <p>Make up {booking.makeupDate} {booking.makeupTime} · {booking.hairStyle}</p> : null}
@@ -397,14 +650,17 @@ function DayBoard({ date, bookings, onEdit, onDelete, onAssign }) {
                 Fotografer
                 <select value={booking.photographer || ""} onChange={(event) => onAssign(booking, event.target.value)}>
                   <option value="">Belum ditugaskan</option>
-                  {PHOTOGRAPHERS.map((id) => (
-                    <option key={id} value={id} disabled={taken.has(id)}>
-                      Fotografer {id}
+                  {photographers.map((item) => (
+                    <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
+                      {item.name}
                     </option>
                   ))}
                 </select>
               </label>
               <div className="admin-row-actions">
+                <button type="button" onClick={() => onMoveUp(booking, dayBookings)} title="Geser ke atas">
+                  Naik
+                </button>
                 <button type="button" onClick={() => onEdit(booking)}>
                   Ubah
                 </button>
@@ -420,29 +676,207 @@ function DayBoard({ date, bookings, onEdit, onDelete, onAssign }) {
   );
 }
 
-function whatsAppLink(value) {
-  const digits = value.replace(/\D/g, "");
-  const international = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
-  return `https://wa.me/${international}`;
+function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
+  const [draft, setDraft] = useState(null);
+
+  return (
+    <aside className="admin-side">
+      <section className="admin-block admin-photographers">
+        <div className="admin-side-head">
+          <h2>Info fotografer</h2>
+          <button type="button" onClick={() => setDraft({ ...emptyPhotographer })}>
+            Tambah
+          </button>
+        </div>
+        <p className="hint">CRUD data fotografer dan pantau jumlah assignment kerja.</p>
+        {draft ? (
+          <form
+            className="admin-photo-form"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!draft.name.trim()) return;
+              const method = draft._editing ? "PUT" : "POST";
+              const ok = await onSave(
+                {
+                  id: draft.id,
+                  name: draft.name,
+                  phone: draft.phone,
+                  notes: draft.notes,
+                },
+                method,
+              );
+              if (ok) setDraft(null);
+            }}
+          >
+            <label>
+              ID
+              <input
+                value={draft.id}
+                onChange={(event) => setDraft({ ...draft, id: event.target.value.toUpperCase() })}
+                placeholder="otomatis jika kosong"
+                maxLength={4}
+                disabled={Boolean(draft._editing)}
+              />
+            </label>
+            <label>
+              Nama
+              <input
+                value={draft.name}
+                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              WhatsApp / telepon
+              <input
+                value={draft.phone}
+                onChange={(event) => setDraft({ ...draft, phone: event.target.value })}
+                placeholder="08…"
+              />
+            </label>
+            <label>
+              Catatan
+              <textarea
+                value={draft.notes}
+                onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
+                rows={3}
+              />
+            </label>
+            <div className="admin-row-actions">
+              <button className="btn btn-forest" type="submit">
+                Simpan
+              </button>
+              <button type="button" onClick={() => setDraft(null)}>
+                Batal
+              </button>
+            </div>
+          </form>
+        ) : null}
+        <ul className="admin-photo-list">
+          {photographers.map((item) => {
+            const assignments = bookings.filter((booking) => booking.photographer === item.id).length;
+            return (
+              <li key={item.id}>
+                <div>
+                  <strong>{item.name}</strong>
+                  <span className="crew crew-A">{item.id}</span>
+                  <p>{item.phone || "Kontak belum diisi"}</p>
+                  <p>{item.notes || "—"}</p>
+                  <p className="admin-assign-count">{assignments} assignment</p>
+                </div>
+                <div className="admin-row-actions">
+                  <button type="button" onClick={() => setDraft({ ...item, _editing: true })}>
+                    Ubah
+                  </button>
+                  <button type="button" onClick={() => onDelete(item.id)}>
+                    Hapus
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </aside>
+  );
 }
 
-function BookingForm({ draft, bookings, onChange, onSubmit, onCancel }) {
+function MockForm({ draft, onChange, onSubmit, onCancel }) {
+  const [attempted, setAttempted] = useState(false);
+  const waInvalid = attempted && !isActiveWhatsApp(draft.whatsapp);
+  const nameInvalid = attempted && draft.name.trim().length < 3;
+
+  return (
+    <form
+      className="admin-form"
+      onSubmit={(event) => {
+        setAttempted(true);
+        onSubmit(event);
+      }}
+    >
+      <h2>{draft.id ? "Ubah mock customer" : "Mock customer baru"}</h2>
+      <label className={nameInvalid ? "is-invalid" : ""}>
+        Nama
+        <input value={draft.name} onChange={(event) => onChange("name", event.target.value)} required />
+        {nameInvalid ? <span className="field-error">Nama lengkap minimal 3 karakter.</span> : null}
+      </label>
+      <label className={waInvalid ? "is-invalid" : ""}>
+        WhatsApp
+        <input
+          value={draft.whatsapp}
+          onChange={(event) => onChange("whatsapp", event.target.value)}
+          placeholder="08… atau 628…"
+          required
+        />
+        {waInvalid ? <span className="field-error">Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).</span> : null}
+      </label>
+      <label>
+        Paket
+        <select value={draft.packageId} onChange={(event) => onChange("packageId", event.target.value)}>
+          {packages.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Lokasi
+        <input value={draft.location} onChange={(event) => onChange("location", event.target.value)} />
+      </label>
+      <label>
+        Catatan
+        <textarea value={draft.notes} onChange={(event) => onChange("notes", event.target.value)} rows={3} />
+      </label>
+      <div className="admin-row-actions">
+        <button className="btn btn-forest" type="submit">
+          Simpan mock
+        </button>
+        <button type="button" onClick={onCancel}>
+          Batal
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCancel }) {
   const selected = packages.find((item) => item.id === draft.packageId) ?? packages[0];
   const end = draft.startTime ? addMinutes(draft.startTime, packageMinutes(selected)) : "";
   const taken = draft.date && draft.startTime && end
     ? takenPhotographers(bookings, draft.date, draft.startTime, end, draft.id)
     : new Set();
+  const [attempted, setAttempted] = useState(false);
+  const waInvalid = attempted && !isActiveWhatsApp(draft.whatsapp);
+  const nameInvalid = attempted && draft.name.trim().length < 3;
 
   return (
-    <form className="admin-form" onSubmit={onSubmit}>
-      <h2>{draft.id ? "Ubah booking" : "Booking baru"}</h2>
-      <label>
+    <form
+      className="admin-form"
+      onSubmit={(event) => {
+        setAttempted(true);
+        if (!isActiveWhatsApp(draft.whatsapp) || draft.name.trim().length < 3) {
+          event.preventDefault();
+          return;
+        }
+        onSubmit(event);
+      }}
+    >
+      <h2>{draft.mockId ? "Naikkan mock ke booking" : draft.id ? "Ubah booking" : "Booking baru"}</h2>
+      <label className={nameInvalid ? "is-invalid" : ""}>
         Nama
         <input value={draft.name} onChange={(event) => onChange("name", event.target.value)} required />
+        {nameInvalid ? <span className="field-error">Nama lengkap minimal 3 karakter.</span> : null}
       </label>
-      <label>
+      <label className={waInvalid ? "is-invalid" : ""}>
         WhatsApp
-        <input value={draft.whatsapp} onChange={(event) => onChange("whatsapp", event.target.value)} required />
+        <input
+          value={draft.whatsapp}
+          onChange={(event) => onChange("whatsapp", event.target.value)}
+          placeholder="08… atau 628…"
+          required
+        />
+        {waInvalid ? <span className="field-error">Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).</span> : null}
       </label>
       <label>
         Tanggal
@@ -463,6 +897,13 @@ function BookingForm({ draft, bookings, onChange, onSubmit, onCancel }) {
         </select>
       </label>
       <label>
+        Status bayar
+        <select value={draft.paymentStatus || "dp"} onChange={(event) => onChange("paymentStatus", event.target.value)}>
+          <option value="dp">DP</option>
+          <option value="pelunasan">Pelunasan</option>
+        </select>
+      </label>
+      <label>
         Lokasi
         <input value={draft.location} onChange={(event) => onChange("location", event.target.value)} required />
       </label>
@@ -474,9 +915,9 @@ function BookingForm({ draft, bookings, onChange, onSubmit, onCancel }) {
         Fotografer
         <select value={draft.photographer || ""} onChange={(event) => onChange("photographer", event.target.value)}>
           <option value="">Belum ditugaskan</option>
-          {PHOTOGRAPHERS.map((id) => (
-            <option key={id} value={id} disabled={taken.has(id)}>
-              Fotografer {id}
+          {photographers.map((item) => (
+            <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
+              {item.name}
             </option>
           ))}
         </select>

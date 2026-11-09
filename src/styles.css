@@ -211,6 +211,14 @@ p { margin: 0; }
   letter-spacing: 0.6px;
   text-transform: uppercase;
   padding: 5px 48px;
+  z-index: 2;
+}
+.ribbon.is-special {
+  top: 22px;
+  right: -18px;
+  transform: rotate(34deg);
+  padding: 6px 40px;
+  letter-spacing: 0.4px;
 }
 .pkg-body {
   padding: 26px 24px 16px;
@@ -559,8 +567,83 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 }
 
 .admin-login, .admin-page {
-  width: min(1120px, calc(100% - 32px));
+  width: min(1280px, calc(100% - 32px));
   margin: 32px auto 64px;
+}
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+.admin-main { min-width: 0; }
+.admin-side { position: sticky; top: 18px; }
+.admin-side-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.admin-side-head h2 { margin: 0; font-size: 24px; }
+.admin-photographers .hint { margin-bottom: 12px; }
+.admin-photo-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--mist);
+}
+.admin-photo-list, .admin-mock-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.admin-photo-list li, .admin-mock-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--mist);
+  border-radius: 12px;
+  padding: 12px;
+}
+.admin-mock-list li {
+  cursor: grab;
+  border: 1px dashed transparent;
+}
+.admin-mock-list li:active { cursor: grabbing; }
+.admin-assign-count {
+  margin-top: 6px;
+  font-weight: 700;
+  color: var(--forest);
+}
+.admin-booking-id {
+  display: grid;
+  gap: 6px;
+}
+.admin-booking-id strong {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+.admin-day.is-drop-target, .admin-dropzone.is-drop-target {
+  box-shadow: inset 0 0 0 2px var(--green);
+  background: #f3f8ee;
+}
+.admin-form label.is-invalid input,
+.admin-form label.is-invalid textarea {
+  border-color: var(--danger);
+}
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 13px;
 }
 .admin-login form, .admin-form, .admin-day, .admin-block {
   background: white;
@@ -648,9 +731,9 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 .admin-table { display: grid; gap: 12px; }
 .admin-table article {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr 1.3fr 1fr 1fr auto;
+  grid-template-columns: 1.2fr 1fr 1fr 1.2fr 1fr 1fr auto auto;
   gap: 10px;
-  align-items: center;
+  align-items: start;
   padding: 12px;
   border-radius: 12px;
   background: var(--mist);
@@ -680,9 +763,14 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 .crew-none { background: white; color: var(--muted); }
 .admin-block ul { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
 .admin-block li { background: var(--mist); border-radius: 10px; padding: 10px 12px; }
+@media (max-width: 1100px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-side { position: static; }
+}
 @media (max-width: 900px) {
   .admin-tools, .admin-block form, .admin-form { grid-template-columns: 1fr; }
   .admin-table article { grid-template-columns: 1fr; }
+  .admin-photo-list li, .admin-mock-list li { flex-direction: column; }
 }
 
 .pkg-card.is-highlight { box-shadow: inset 0 0 0 1px var(--gold); }

@@ -1,5 +1,34 @@
-export const PHOTOGRAPHERS = ["A", "B", "C"];
+export const DEFAULT_PHOTOGRAPHERS = [
+  { id: "A", name: "Fotografer A", phone: "", notes: "" },
+  { id: "B", name: "Fotografer B", phone: "", notes: "" },
+  { id: "C", name: "Fotografer C", phone: "", notes: "" },
+];
+
+export const PHOTOGRAPHERS = DEFAULT_PHOTOGRAPHERS.map((item) => item.id);
 export const CAPACITY = PHOTOGRAPHERS.length;
+
+export function normalizePhotographers(list) {
+  if (!Array.isArray(list) || list.length === 0) return DEFAULT_PHOTOGRAPHERS.map((item) => ({ ...item }));
+  return list
+    .map((item, index) => {
+      const id = String(item?.id || "").trim().toUpperCase() || String.fromCharCode(65 + index);
+      return {
+        id,
+        name: String(item?.name || `Fotografer ${id}`).trim().slice(0, 80) || `Fotografer ${id}`,
+        phone: String(item?.phone || "").trim().slice(0, 20),
+        notes: String(item?.notes || "").trim().slice(0, 240),
+      };
+    })
+    .filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index);
+}
+
+export function photographerIds(list) {
+  return normalizePhotographers(list).map((item) => item.id);
+}
+
+export function photographerCapacity(list) {
+  return Math.max(photographerIds(list).length, 1);
+}
 
 export function packageMinutes(pkg) {
   const point = pkg?.points?.find((item) => /(\d+)\s*minutes/i.test(item));
@@ -26,8 +55,10 @@ export function rangesOverlap(start, end, otherStart, otherEnd) {
   return start < otherEnd && otherStart < end;
 }
 
-export function photographerLabel(id) {
-  return id ? `Fotografer ${id}` : "Belum ditugaskan";
+export function photographerLabel(id, list) {
+  if (!id) return "Belum ditugaskan";
+  const match = normalizePhotographers(list).find((item) => item.id === id);
+  return match?.name || `Fotografer ${id}`;
 }
 
 export function sessionLabel(start, end) {
@@ -57,7 +88,7 @@ export function overlappingBookings(bookings, date, start, end, ignoreId) {
   );
 }
 
-export function slotStatus({ bookings, blocks, date, start, end, ignoreId }) {
+export function slotStatus({ bookings, blocks, date, start, end, ignoreId, photographers }) {
   if (!date || !start || !end) return { ok: false, reason: "incomplete", message: "" };
   if (isAdminBlocked(blocks, date, start, end)) {
     return {
@@ -66,23 +97,25 @@ export function slotStatus({ bookings, blocks, date, start, end, ignoreId }) {
       message: "Tanggal atau jam ini ditutup admin. Pilih waktu lain.",
     };
   }
+  const capacity = photographerCapacity(photographers);
   const overlapping = overlappingBookings(bookings, date, start, end, ignoreId);
-  if (overlapping.length >= CAPACITY) {
+  if (overlapping.length >= capacity) {
     return {
       ok: false,
       reason: "full",
-      message: "Waktu ini sudah penuh (3 sesi berjalan bersamaan). Pilih jam lain.",
+      message: `Waktu ini sudah penuh (${capacity} sesi berjalan bersamaan). Pilih jam lain.`,
     };
   }
-  const free = CAPACITY - overlapping.length;
+  const free = capacity - overlapping.length;
   return {
     ok: true,
     reason: "open",
-    message: overlapping.length ? `${free} dari ${CAPACITY} fotografer masih tersedia di jam ini.` : "",
+    message: overlapping.length ? `${free} dari ${capacity} fotografer masih tersedia di jam ini.` : "",
   };
 }
 
-export function fullIntervals(bookings, date) {
+export function fullIntervals(bookings, date, photographers) {
+  const capacity = photographerCapacity(photographers);
   const events = [];
   bookings
     .filter((booking) => booking.date === date)
@@ -97,19 +130,19 @@ export function fullIntervals(bookings, date) {
   let open = "";
   events.forEach((event) => {
     const next = count + event.delta;
-    if (count < CAPACITY && next >= CAPACITY) open = event.time;
-    if (count >= CAPACITY && next < CAPACITY && open && open < event.time) {
+    if (count < capacity && next >= capacity) open = event.time;
+    if (count >= capacity && next < capacity && open && open < event.time) {
       spans.push({ start: open, end: event.time });
       open = "";
     }
-    if (next < CAPACITY) open = "";
+    if (next < capacity) open = "";
     count = next;
   });
   return spans;
 }
 
-export function bookingIsInFullBlock(booking, bookings) {
-  return fullIntervals(bookings, booking.date).some((span) =>
+export function bookingIsInFullBlock(booking, bookings, photographers) {
+  return fullIntervals(bookings, booking.date, photographers).some((span) =>
     rangesOverlap(booking.startTime, booking.endTime, span.start, span.end),
   );
 }
@@ -122,7 +155,7 @@ export function takenPhotographers(bookings, date, start, end, ignoreId) {
   );
 }
 
-export function firstFreePhotographer(bookings, date, start, end, ignoreId) {
+export function firstFreePhotographer(bookings, date, start, end, ignoreId, photographers) {
   const taken = takenPhotographers(bookings, date, start, end, ignoreId);
-  return PHOTOGRAPHERS.find((id) => !taken.has(id)) || "";
+  return photographerIds(photographers).find((id) => !taken.has(id)) || "";
 }
