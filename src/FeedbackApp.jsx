@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { saveFeedback } from "./feedback";
+import { submitFeedback } from "./api";
 
 const logoSrc = "/assets/logo%20seraye%20moments%20-%20Gold%20(1).png";
 
@@ -29,15 +29,19 @@ export default function FeedbackApp() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     if (!service || !website) {
       setError("Pilih bintang untuk Seraye Moments dan untuk website seraye.");
       return;
     }
-    saveFeedback({ name: "", message: message.trim(), service, website });
-    setSaved(true);
-    setError("");
+    try {
+      await submitFeedback({ message: message.trim(), service, website });
+      setSaved(true);
+      setError("");
+    } catch (reason) {
+      setError(reason.message);
+    }
   }
 
   return (

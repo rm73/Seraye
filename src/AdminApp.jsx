@@ -328,19 +328,19 @@ export default function AdminApp() {
           />
         ))
       )}
-      <FeedbackBoard />
+      <FeedbackBoard items={schedule.feedback} />
     </main>
   );
 }
 
-function FeedbackBoard() {
-  const items = readFeedback();
+function FeedbackBoard({ items }) {
+  const list = Array.isArray(items) ? items : readFeedback();
   return (
     <details className="admin-block admin-feedback">
       <summary>Penilaian pelanggan</summary>
       <div className="rating-list">
-        {items.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
-        {items.map((item) => (
+        {list.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
+        {list.map((item) => (
           <article key={item.id}>
             <span>Seraye Moments {item.service}/5 · Website Seraye {item.website}/5</span>
             <p>{item.message || "—"}</p>

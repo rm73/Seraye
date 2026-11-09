@@ -1,3 +1,4 @@
+import { saveFeedback } from "./feedback";
 import * as localSchedule from "./localSchedule";
 
 const TOKEN_KEY = "seraye-admin-token";
@@ -109,4 +110,16 @@ export function deleteBlock(id) {
     () => localSchedule.deleteBlock(id),
     () => request(`/api/admin/blocks?id=${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
   );
+}
+
+export async function submitFeedback(entry) {
+  try {
+    return await request("/api/feedback", { method: "POST", body: entry });
+  } catch (error) {
+    if (error?.message === "Tidak ditemukan.") {
+      saveFeedback(entry);
+      return { local: true };
+    }
+    throw error;
+  }
 }
