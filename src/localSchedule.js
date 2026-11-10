@@ -149,6 +149,8 @@ function seedState() {
         packageName: "Sekejap",
         location: "ITB Bandung",
         notes: "Calon client follow-up",
+        startTime: "09:00",
+        extraPhotos: 2,
         createdAt: new Date().toISOString(),
       },
     ],
@@ -409,6 +411,8 @@ function buildMock(input, existing) {
     packageName: selected.name,
     location: cleanText(input.location, 160),
     notes: cleanText(input.notes, 500),
+    startTime: normalizeTime(input.startTime),
+    extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 }

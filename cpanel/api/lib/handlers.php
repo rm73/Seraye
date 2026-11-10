@@ -482,14 +482,16 @@ function handle_admin_mocks() {
                 'packageName' => $selected['name'],
                 'location' => clean_text(isset($body['location']) ? $body['location'] : '', 160),
                 'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 500),
+                'startTime' => normalize_time(isset($body['startTime']) ? $body['startTime'] : ''),
+                'extraPhotos' => max(0, (int) (isset($body['extraPhotos']) ? $body['extraPhotos'] : 0)),
                 'createdAt' => $existing ? $existing['createdAt'] : iso_now(),
             ];
             if ($existing) {
-                $stmt = $pdo->prepare('UPDATE mocks SET name = ?, whatsapp = ?, package_id = ?, package_name = ?, location = ?, notes = ? WHERE id = ?');
-                $stmt->execute([$record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['id']]);
+                $stmt = $pdo->prepare('UPDATE mocks SET name = ?, whatsapp = ?, package_id = ?, package_name = ?, location = ?, notes = ?, start_time = ?, extra_photos = ? WHERE id = ?');
+                $stmt->execute([$record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['startTime'], $record['extraPhotos'], $record['id']]);
             } else {
-                $stmt = $pdo->prepare('INSERT INTO mocks (id, name, whatsapp, package_id, package_name, location, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                $stmt->execute([$record['id'], $record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['createdAt']]);
+                $stmt = $pdo->prepare('INSERT INTO mocks (id, name, whatsapp, package_id, package_name, location, notes, start_time, extra_photos, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$record['id'], $record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['startTime'], $record['extraPhotos'], $record['createdAt']]);
             }
             $mocks = [];
             $replaced = false;

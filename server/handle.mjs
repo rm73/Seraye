@@ -246,6 +246,8 @@ function buildMock(input, existing) {
     packageName: selected.name,
     location: cleanText(input.location, 160),
     notes: cleanText(input.notes, 500),
+    startTime: normalizeTime(input.startTime),
+    extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 }

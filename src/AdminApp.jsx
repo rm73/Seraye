@@ -39,6 +39,7 @@ const emptyBooking = {
   notes: "",
   photographer: "",
   paymentStatus: "dp",
+  extraPhotos: 0,
   mockId: "",
 };
 
@@ -49,6 +50,8 @@ const emptyMock = {
   packageId: "sekejap",
   location: "",
   notes: "",
+  startTime: "",
+  extraPhotos: 0,
 };
 
 const emptyPhotographer = {
@@ -136,6 +139,7 @@ export default function AdminApp() {
     mocks: [],
     persistent: true,
   });
+  const [page, setPage] = useState("dashboard");
   const [filterDate, setFilterDate] = useState("");
   const [draft, setDraft] = useState(null);
   const [mockDraft, setMockDraft] = useState(null);
@@ -270,9 +274,13 @@ export default function AdminApp() {
       location: mock.location || "",
       notes: mock.notes || "",
       date,
+      startTime: mock.startTime || "",
+      extraPhotos: Number(mock.extraPhotos) || 0,
+      includeMua: Boolean(packages.find((item) => item.id === mock.packageId)?.includesMua),
       mockId: mock.id,
     });
-    setNotice(date ? `Lengkapi jam untuk naikkan ${mock.name} ke booking ${formatDate(date)}.` : `Lengkapi tanggal & jam untuk naikkan ${mock.name} ke booking.`);
+    setPage("bookings");
+    setNotice(date ? `Periksa data ${mock.name} sebelum disimpan ke booking ${formatDate(date)}.` : `Lengkapi tanggal untuk naikkan ${mock.name} ke booking.`);
   }
 
   function onMockDrop(date, event) {
@@ -294,7 +302,7 @@ export default function AdminApp() {
       <header className="admin-bar">
         <div>
           <p className="eyebrow">Seraye Moments</p>
-          <h1>Dashboard booking</h1>
+          <h1>{page === "dashboard" ? "Dashboard" : "Booking list"}</h1>
         </div>
         <div className="admin-bar-actions">
           <a href="/">Lihat situs</a>
@@ -304,58 +312,18 @@ export default function AdminApp() {
       {error ? <p className="admin-error">{error}</p> : null}
       {notice ? <p className="admin-notice">{notice}</p> : null}
 
-      <div className="admin-layout">
-        <div className="admin-main">
-          <section className="admin-tools">
-            <label>
-              Tanggal
-              <input type="date" value={filterDate} onChange={(event) => setFilterDate(event.target.value)} />
-            </label>
-            <button type="button" onClick={() => setFilterDate("")}>
-              Semua tanggal
-            </button>
-            <button
-              type="button"
-              className="btn btn-forest"
-              onClick={() => setDraft({ ...emptyBooking, date: filterDate })}
-            >
-              Tambah booking
-            </button>
-            <button type="button" className="btn btn-forest" onClick={() => setMockDraft({ ...emptyMock })}>
-              Tambah mock customer
-            </button>
-          </section>
-
-          {draft ? (
-            <BookingForm
-              draft={draft}
-              bookings={schedule.bookings}
-              photographers={photographers}
-              onChange={updateDraft}
-              onSubmit={submitDraft}
-              onCancel={() => setDraft(null)}
-            />
-          ) : null}
-
-          {mockDraft ? (
-            <MockForm
-              draft={mockDraft}
-              onChange={(field, value) => setMockDraft((current) => ({ ...current, [field]: value }))}
-              onCancel={() => setMockDraft(null)}
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!isActiveWhatsApp(mockDraft.whatsapp)) {
-                  setError("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
-                  return;
-                }
-                run(async () => {
-                  await saveAdminMock(mockDraft, mockDraft.id ? "PUT" : "POST");
-                  setMockDraft(null);
-                }, "Mock customer disimpan.");
-              }}
-            />
-          ) : null}
-
+      <div className="admin-shell">
+        <nav className="admin-nav" aria-label="Menu admin">
+          <button type="button" className={page === "dashboard" ? "is-on" : ""} onClick={() => setPage("dashboard")}>
+            Dashboard
+          </button>
+          <button type="button" className={page === "bookings" ? "is-on" : ""} onClick={() => setPage("bookings")}>
+            Booking list
+          </button>
+        </nav>
+        <div className="admin-content">
+          {page === "dashboard" ? (
+            <>
           <section className="admin-block">
             <h2>Tutup tanggal atau jam</h2>
             <form
@@ -439,6 +407,58 @@ export default function AdminApp() {
               ))}
             </ul>
           </section>
+          <PhotographerPanel
+            photographers={photographers}
+            bookings={schedule.bookings}
+            onSave={(photographer, method) => run(() => saveAdminPhotographer(photographer, method), "Fotografer disimpan.")}
+            onDelete={(id) => run(() => deleteAdminPhotographer(id), "Fotografer dihapus.")}
+          />
+          <FeedbackBoard items={schedule.feedback} />
+            </>
+          ) : (
+            <>
+          <section className="admin-tools">
+            <label>
+              Tanggal
+              <input type="date" value={filterDate} onChange={(event) => setFilterDate(event.target.value)} />
+            </label>
+            <button type="button" onClick={() => setFilterDate("")}>
+              Lihat semua
+            </button>
+            <button type="button" className="btn btn-forest" onClick={() => setMockDraft({ ...emptyMock })}>
+              Tambah mock customer
+            </button>
+          </section>
+
+          {draft ? (
+            <BookingForm
+              draft={draft}
+              bookings={schedule.bookings}
+              photographers={photographers}
+              onChange={updateDraft}
+              onSubmit={submitDraft}
+              onCancel={() => setDraft(null)}
+            />
+          ) : null}
+
+          {mockDraft ? (
+            <MockForm
+              draft={mockDraft}
+              onChange={(field, value) => setMockDraft((current) => ({ ...current, [field]: value }))}
+              onCancel={() => setMockDraft(null)}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!isActiveWhatsApp(mockDraft.whatsapp)) {
+                  setError("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
+                  return;
+                }
+                run(async () => {
+                  await saveAdminMock(mockDraft, mockDraft.id ? "PUT" : "POST");
+                  setMockDraft(null);
+                }, "Mock customer disimpan.");
+              }}
+            />
+          ) : null}
 
           <MockBoard
             mocks={schedule.mocks}
@@ -449,7 +469,9 @@ export default function AdminApp() {
 
           {visibleDates.length === 0 ? (
             <p className="admin-empty">
-              Belum ada booking. Data masuk otomatis saat klien menekan Lanjutkan Booking via WhatsApp atau Salin pesan.
+              {filterDate
+                ? `Tidak ada booking pada ${formatDate(filterDate)}.`
+                : "Belum ada booking. Data masuk otomatis saat klien menekan Lanjutkan Booking via WhatsApp atau Salin pesan."}
             </p>
           ) : (
             visibleDates.map((date) => (
@@ -477,15 +499,10 @@ export default function AdminApp() {
               />
             ))
           )}
+            </>
+          )}
         </div>
-        <PhotographerPanel
-          photographers={photographers}
-          bookings={schedule.bookings}
-          onSave={(photographer, method) => run(() => saveAdminPhotographer(photographer, method), "Fotografer disimpan.")}
-          onDelete={(id) => run(() => deleteAdminPhotographer(id), "Fotografer dihapus.")}
-        />
       </div>
-      <FeedbackBoard items={schedule.feedback} />
     </main>
   );
 }
@@ -493,8 +510,8 @@ export default function AdminApp() {
 function FeedbackBoard({ items }) {
   const list = Array.isArray(items) ? items : readFeedback();
   return (
-    <details className="admin-block admin-feedback">
-      <summary>Penilaian pelanggan</summary>
+    <section className="admin-block admin-feedback">
+      <h2>Penilaian pelanggan</h2>
       <div className="rating-list">
         {list.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
         {list.map((item) => (
@@ -504,7 +521,7 @@ function FeedbackBoard({ items }) {
           </article>
         ))}
       </div>
-    </details>
+    </section>
   );
 }
 
@@ -532,6 +549,8 @@ function MockBoard({ mocks, onEdit, onDelete, onPromote }) {
                 </a>
                 {` · ${mock.packageName || mock.packageId}`}
               </p>
+              <p>{mock.startTime ? `Jam mulai ${mock.startTime}` : "Jam mulai belum diisi"}</p>
+              <p>Add-on edit foto: {Number(mock.extraPhotos) || 0}</p>
               <p>{mock.location || "Lokasi belum diisi"}</p>
             </div>
             <div className="admin-row-actions">
@@ -596,7 +615,7 @@ function DayBoard({
           const full = bookingIsInFullBlock(booking, bookings, photographers);
           const taken = takenPhotographers(bookings, booking.date, booking.startTime, booking.endTime, booking.id);
           return (
-            <article key={booking.id} className={full ? "is-full" : ""}>
+            <article key={booking.id} className={full ? "admin-booking-card is-full" : "admin-booking-card"}>
               <div className="admin-booking-id">
                 <strong>ID Booking</strong>
                 <span>{booking.id}</span>
@@ -611,37 +630,39 @@ function DayBoard({
                   </select>
                 </label>
               </div>
-              <div>
-                <span className={`crew crew-${booking.photographer || "none"}`}>
-                  {photographerLabel(booking.photographer, photographers)}
-                </span>
-                <p>{booking.name}</p>
+              <div className="admin-booking-body">
+                <p><strong>{booking.name}</strong></p>
+                <p>
+                  <span className={`crew crew-${booking.photographer || "none"}`}>
+                    {photographerLabel(booking.photographer, photographers)}
+                  </span>
+                </p>
+                <p>
+                  <a href={whatsAppLink(booking.whatsapp)} target="_blank" rel="noreferrer">
+                    {booking.whatsapp}
+                  </a>
+                </p>
+                <p>
+                  {booking.packageName} · {sessionLabel(booking.startTime, booking.endTime)} ({booking.minutes} menit)
+                </p>
+                <p>{booking.location || "Titik temu belum diisi"}</p>
+                <p>Add-on edit foto: {Number(booking.extraPhotos) || 0}</p>
+                <p>{booking.notes?.trim() || "—"}</p>
+                {booking.includeMua ? <p>Include Paket MUA</p> : null}
+                {booking.makeupDate ? <p>Make up {booking.makeupDate} {booking.makeupTime} · {booking.hairStyle}</p> : null}
+                {booking.muaAddress ? <p>{booking.muaAddress}</p> : null}
+                <label>
+                  Fotografer
+                  <select value={booking.photographer || ""} onChange={(event) => onAssign(booking, event.target.value)}>
+                    <option value="">Belum ditugaskan</option>
+                    {photographers.map((item) => (
+                      <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-              <p>
-                <a href={whatsAppLink(booking.whatsapp)} target="_blank" rel="noreferrer">
-                  {booking.whatsapp}
-                </a>
-              </p>
-              <p>
-                {booking.packageName} · {sessionLabel(booking.startTime, booking.endTime)} ({booking.minutes} menit)
-              </p>
-              <p>{booking.location || "Titik temu belum diisi"}</p>
-              <p>{booking.notes?.trim() || "—"}</p>
-              {booking.includeMua ? <p>Include Paket MUA</p> : null}
-              {booking.extraPhotos ? <p>Add-on edit foto: {booking.extraPhotos}</p> : null}
-              {booking.makeupDate ? <p>Make up {booking.makeupDate} {booking.makeupTime} · {booking.hairStyle}</p> : null}
-              {booking.muaAddress ? <p>{booking.muaAddress}</p> : null}
-              <label>
-                Fotografer
-                <select value={booking.photographer || ""} onChange={(event) => onAssign(booking, event.target.value)}>
-                  <option value="">Belum ditugaskan</option>
-                  {photographers.map((item) => (
-                    <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <div className="admin-row-actions">
                 <button type="button" onClick={() => onMoveUp(booking, dayBookings)} title="Geser ke atas">
                   Naik
@@ -665,8 +686,7 @@ function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
   const [draft, setDraft] = useState(null);
 
   return (
-    <aside className="admin-side">
-      <section className="admin-block admin-photographers">
+    <section className="admin-block admin-photographers">
         <div className="admin-side-head">
           <h2>Info fotografer</h2>
           <button type="button" onClick={() => setDraft({ ...emptyPhotographer })}>
@@ -743,8 +763,10 @@ function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
             return (
               <li key={item.id}>
                 <div>
-                  <strong>{item.name}</strong>
-                  <span className="crew crew-A">{item.id}</span>
+                  <div className="admin-photo-top">
+                    <strong>{item.name}</strong>
+                    <span className={`crew crew-${item.id || "none"}`}>{item.id}</span>
+                  </div>
                   <p>{item.phone || "Kontak belum diisi"}</p>
                   <p>{item.notes || "—"}</p>
                   <p className="admin-assign-count">{assignments} assignment</p>
@@ -761,8 +783,7 @@ function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
             );
           })}
         </ul>
-      </section>
-    </aside>
+    </section>
   );
 }
 
@@ -804,6 +825,19 @@ function MockForm({ draft, onChange, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+      </label>
+      <label>
+        Jam mulai
+        <input type="time" value={draft.startTime || ""} onChange={(event) => onChange("startTime", event.target.value)} />
+      </label>
+      <label>
+        Add-on edit foto
+        <input
+          type="number"
+          min="0"
+          value={Number(draft.extraPhotos) || 0}
+          onChange={(event) => onChange("extraPhotos", Math.max(0, Number(event.target.value) || 0))}
+        />
       </label>
       <label>
         Lokasi
@@ -887,6 +921,15 @@ function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCan
           <option value="dp">DP</option>
           <option value="pelunasan">Pelunasan</option>
         </select>
+      </label>
+      <label>
+        Add-on edit foto
+        <input
+          type="number"
+          min="0"
+          value={Number(draft.extraPhotos) || 0}
+          onChange={(event) => onChange("extraPhotos", Math.max(0, Number(event.target.value) || 0))}
+        />
       </label>
       <label>
         Lokasi
