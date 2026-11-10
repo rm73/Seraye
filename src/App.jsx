@@ -45,7 +45,7 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false }) {
   return (
     <article className={classes} onClick={quiet ? undefined : onSelect}>
       {item.bestSeller ? <p className="ribbon">Best Seller</p> : null}
-      {item.specialOffer ? <p className="ribbon">Special Offer</p> : null}
+      {item.specialOffer ? <p className="ribbon is-special">Special Offer</p> : null}
       {item.image ? <img className="pkg-photo" src={item.image} alt="" loading="lazy" decoding="async" /> : null}
       {item.id === "sempurna" ? <img className="anadevi-mark" src="/assets/opt/cards/circle%20anadevi.webp" alt="Anadevi" loading="lazy" decoding="async" /> : null}
       <div className="pkg-body">

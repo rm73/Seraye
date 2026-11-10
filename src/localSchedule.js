@@ -1,11 +1,13 @@
-import { buildBookingId } from "./booking";
+import { buildBookingId, isActiveWhatsApp } from "./booking";
 import { packages } from "./data";
 import {
   addMinutes,
+  DEFAULT_PHOTOGRAPHERS,
   firstFreePhotographer,
+  normalizePhotographers,
   normalizeTime,
   packageMinutes,
-  PHOTOGRAPHERS,
+  photographerIds,
   slotStatus,
   takenPhotographers,
 } from "./schedule";
@@ -29,7 +31,11 @@ function findPackage(packageId) {
   return packages.find((item) => item.id === packageId);
 }
 
-function mockBooking({ name, whatsapp, date, startTime, packageId, location, notes, photographer, source }) {
+function paymentStatusValue(value, fallback = "dp") {
+  return value === "pelunasan" ? "pelunasan" : value === "dp" ? "dp" : fallback;
+}
+
+function mockBooking({ name, whatsapp, date, startTime, packageId, location, notes, photographer, source, paymentStatus }) {
   const selected = findPackage(packageId);
   const minutes = packageMinutes(selected);
   return {
@@ -46,6 +52,8 @@ function mockBooking({ name, whatsapp, date, startTime, packageId, location, not
     location,
     notes,
     photographer,
+    paymentStatus: paymentStatus || "dp",
+    sortOrder: Date.now(),
     source,
     createdAt: new Date().toISOString(),
   };
@@ -66,6 +74,7 @@ function seedState() {
         notes: "Mau foto dekat danau.",
         photographer: "A",
         source: "whatsapp",
+        paymentStatus: "dp",
       }),
       mockBooking({
         name: "Reza Mahendra",
@@ -77,6 +86,7 @@ function seedState() {
         notes: "",
         photographer: "B",
         source: "copy",
+        paymentStatus: "dp",
       }),
       mockBooking({
         name: "Aulia Rahman",
@@ -88,6 +98,7 @@ function seedState() {
         notes: "Datang bersama orang tua.",
         photographer: "C",
         source: "whatsapp",
+        paymentStatus: "pelunasan",
       }),
       mockBooking({
         name: "Salsa Kirana",
@@ -99,6 +110,7 @@ function seedState() {
         notes: "Butuh video portrait.",
         photographer: "A",
         source: "whatsapp",
+        paymentStatus: "dp",
       }),
     ],
     blocks: [
@@ -127,6 +139,28 @@ function seedState() {
         reason: "Libur, ditutup seharian",
       },
     ],
+    photographers: DEFAULT_PHOTOGRAPHERS.map((item) => ({ ...item })),
+    mocks: [
+      {
+        id: "mock-seed-1",
+        name: "Dimas Pratama",
+        whatsapp: "081298765432",
+        packageId: "sekejap",
+        packageName: "Sekejap",
+        location: "ITB Bandung",
+        notes: "Calon client follow-up",
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  };
+}
+
+function normalizeState(parsed) {
+  return {
+    bookings: Array.isArray(parsed?.bookings) ? parsed.bookings : [],
+    blocks: Array.isArray(parsed?.blocks) ? parsed.blocks : [],
+    photographers: normalizePhotographers(parsed?.photographers),
+    mocks: Array.isArray(parsed?.mocks) ? parsed.mocks : [],
   };
 }
 
@@ -136,15 +170,16 @@ export function readState() {
     if (!raw) return writeState(seedState());
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.bookings) || !Array.isArray(parsed.blocks)) return writeState(seedState());
-    return parsed;
+    return writeState(normalizeState(parsed));
   } catch {
     return writeState(seedState());
   }
 }
 
 function writeState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  return state;
+  const next = normalizeState(state);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  return next;
 }
 
 export function publicSchedule() {
@@ -169,20 +204,22 @@ function assertSlot(state, record) {
     start: record.startTime,
     end: record.endTime,
     ignoreId: record.id,
+    photographers: state.photographers,
   });
   if (!status.ok) throw new Error(status.message);
 }
 
 function assignPhotographer(state, record, requested, auto) {
+  const ids = photographerIds(state.photographers);
   const taken = takenPhotographers(state.bookings, record.date, record.startTime, record.endTime, record.id);
   if (!auto) {
     if (!requested) return "";
-    if (!PHOTOGRAPHERS.includes(requested)) throw new Error("Fotografer tidak dikenali.");
+    if (!ids.includes(requested)) throw new Error("Fotografer tidak dikenali.");
     if (taken.has(requested)) throw new Error(`Fotografer ${requested} sudah ada sesi di jam ini.`);
     return requested;
   }
   if (record.photographer && !taken.has(record.photographer)) return record.photographer;
-  return firstFreePhotographer(state.bookings, record.date, record.startTime, record.endTime, record.id);
+  return firstFreePhotographer(state.bookings, record.date, record.startTime, record.endTime, record.id, state.photographers);
 }
 
 function buildRecord(input, existing) {
@@ -194,8 +231,9 @@ function buildRecord(input, existing) {
   const name = cleanText(input.name, 80);
   const whatsapp = cleanText(input.whatsapp, 20);
   const location = cleanText(input.location, 160);
-  if (name.length < 3 || whatsapp.length < 10) {
-    throw new Error("Nama dan WhatsApp wajib diisi.");
+  if (name.length < 3) throw new Error("Nama lengkap minimal 3 karakter.");
+  if (!isActiveWhatsApp(whatsapp)) {
+    throw new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
   }
   return {
     id: cleanText(input.id, 40) || existing?.id || buildBookingId({ date, startTime, code: selected.code }),
@@ -219,8 +257,12 @@ function buildRecord(input, existing) {
     muaMap: cleanText(input.muaMap, 300),
     totalPrice: Number(input.totalPrice) || selected.price,
     bookingFee: Number(input.bookingFee) || 100000,
+    paymentStatus: paymentStatusValue(input.paymentStatus, existing?.paymentStatus || "dp"),
     photographer: existing?.photographer || "",
-    source: existing?.source || (input.source === "copy" ? "copy" : input.source === "admin" ? "admin" : "whatsapp"),
+    sortOrder: Number.isFinite(Number(input.sortOrder))
+      ? Number(input.sortOrder)
+      : Number(existing?.sortOrder) || Date.now(),
+    source: existing?.source || (input.source === "copy" ? "copy" : input.source === "admin" || input.source === "mock" ? "admin" : "whatsapp"),
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 }
@@ -252,16 +294,22 @@ export function saveAdminBooking(input, method) {
     record.id = `${record.id}-${Date.now().toString(36).slice(-3)}`;
   }
   assertSlot(state, record);
-  record.photographer = assignPhotographer(state, record, cleanText(input.photographer, 1), false);
+  record.photographer = assignPhotographer(state, record, cleanText(input.photographer, 8).toUpperCase(), false);
   record.source = existing?.source || "admin";
-  const next = writeState(saveBooking(state, record));
-  return { booking: next.bookings.find((item) => item.id === record.id), bookings: next.bookings, blocks: next.blocks };
+  let next = writeState(saveBooking(state, record));
+  if (input.mockId) {
+    next = writeState({
+      ...next,
+      mocks: next.mocks.filter((item) => item.id !== input.mockId),
+    });
+  }
+  return { booking: next.bookings.find((item) => item.id === record.id), bookings: next.bookings, blocks: next.blocks, photographers: next.photographers, mocks: next.mocks };
 }
 
 export function deleteAdminBooking(id) {
   const state = readState();
   const next = writeState({ ...state, bookings: state.bookings.filter((item) => item.id !== id) });
-  return { bookings: next.bookings, blocks: next.blocks };
+  return { bookings: next.bookings, blocks: next.blocks, photographers: next.photographers, mocks: next.mocks };
 }
 
 export function createBlock(input) {
@@ -288,11 +336,98 @@ export function createBlock(input) {
   };
   const state = readState();
   const next = writeState({ ...state, blocks: state.blocks.concat(block) });
-  return { blocks: next.blocks, bookings: next.bookings };
+  return { blocks: next.blocks, bookings: next.bookings, photographers: next.photographers, mocks: next.mocks };
 }
 
 export function deleteBlock(id) {
   const state = readState();
   const next = writeState({ ...state, blocks: state.blocks.filter((item) => item.id !== id) });
-  return { blocks: next.blocks, bookings: next.bookings };
+  return { blocks: next.blocks, bookings: next.bookings, photographers: next.photographers, mocks: next.mocks };
+}
+
+export function saveAdminPhotographer(input, method) {
+  const state = readState();
+  const current = normalizePhotographers(state.photographers);
+  const requestedId = cleanText(input.id, 8).toUpperCase();
+  if (method === "PUT") {
+    const index = current.findIndex((item) => item.id === requestedId);
+    if (index < 0) throw new Error("Fotografer tidak ditemukan.");
+    current[index] = {
+      id: requestedId,
+      name: cleanText(input.name, 80) || current[index].name,
+      phone: cleanText(input.phone, 20),
+      notes: cleanText(input.notes, 240),
+    };
+  } else {
+    let id = requestedId;
+    if (!id) {
+      const used = new Set(current.map((item) => item.id));
+      id = "A";
+      while (used.has(id)) id = String.fromCharCode(id.charCodeAt(0) + 1);
+    }
+    if (current.some((item) => item.id === id)) throw new Error("ID fotografer sudah dipakai.");
+    current.push({
+      id,
+      name: cleanText(input.name, 80) || `Fotografer ${id}`,
+      phone: cleanText(input.phone, 20),
+      notes: cleanText(input.notes, 240),
+    });
+  }
+  const next = writeState({ ...state, photographers: current });
+  return { photographers: next.photographers, bookings: next.bookings, blocks: next.blocks, mocks: next.mocks };
+}
+
+export function deleteAdminPhotographer(id) {
+  const state = readState();
+  const current = normalizePhotographers(state.photographers);
+  const target = cleanText(id, 8).toUpperCase();
+  if (current.length <= 1) throw new Error("Minimal satu fotografer harus tetap ada.");
+  if (!current.some((item) => item.id === target)) throw new Error("Fotografer tidak ditemukan.");
+  const next = writeState({
+    ...state,
+    photographers: current.filter((item) => item.id !== target),
+    bookings: state.bookings.map((booking) =>
+      booking.photographer === target ? { ...booking, photographer: "" } : booking,
+    ),
+  });
+  return { photographers: next.photographers, bookings: next.bookings, blocks: next.blocks, mocks: next.mocks };
+}
+
+function buildMock(input, existing) {
+  const name = cleanText(input.name, 80);
+  const whatsapp = cleanText(input.whatsapp, 20);
+  if (name.length < 3) throw new Error("Nama lengkap minimal 3 karakter.");
+  if (!isActiveWhatsApp(whatsapp)) {
+    throw new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
+  }
+  const selected = findPackage(input.packageId) || packages[0];
+  return {
+    id: cleanText(input.id, 40) || existing?.id || `mock-${Date.now().toString(36)}`,
+    name,
+    whatsapp,
+    packageId: selected.id,
+    packageName: selected.name,
+    location: cleanText(input.location, 160),
+    notes: cleanText(input.notes, 500),
+    createdAt: existing?.createdAt || new Date().toISOString(),
+  };
+}
+
+export function saveAdminMock(input, method) {
+  const state = readState();
+  const mocks = state.mocks.slice();
+  const existing = mocks.find((item) => item.id === cleanText(input.id, 40));
+  if (method === "PUT" && !existing) throw new Error("Mock customer tidak ditemukan.");
+  const record = buildMock(input, existing);
+  const index = mocks.findIndex((item) => item.id === record.id);
+  if (index >= 0) mocks[index] = record;
+  else mocks.push(record);
+  const next = writeState({ ...state, mocks });
+  return { mock: record, mocks: next.mocks, bookings: next.bookings, blocks: next.blocks, photographers: next.photographers };
+}
+
+export function deleteAdminMock(id) {
+  const state = readState();
+  const next = writeState({ ...state, mocks: state.mocks.filter((item) => item.id !== id) });
+  return { mocks: next.mocks, bookings: next.bookings, blocks: next.blocks, photographers: next.photographers };
 }

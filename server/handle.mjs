@@ -1,11 +1,13 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { isActiveWhatsApp } from "../src/booking.js";
 import { packages } from "../src/data.js";
 import {
   addMinutes,
   firstFreePhotographer,
+  normalizePhotographers,
   normalizeTime,
   packageMinutes,
-  PHOTOGRAPHERS,
+  photographerIds,
   slotStatus,
   takenPhotographers,
 } from "../src/schedule.js";
@@ -120,6 +122,10 @@ function publicSchedule(state) {
   };
 }
 
+function paymentStatusValue(value, fallback = "dp") {
+  return value === "pelunasan" ? "pelunasan" : value === "dp" ? "dp" : fallback;
+}
+
 function buildRecord(input, existing) {
   const selected = findPackage(input.packageId);
   if (!selected) {
@@ -133,8 +139,14 @@ function buildRecord(input, existing) {
   const name = cleanText(input.name, 80);
   const whatsapp = cleanText(input.whatsapp, 20);
   const location = cleanText(input.location, 160);
-  if (name.length < 3 || whatsapp.length < 10) {
-    throw Object.assign(new Error("Nama dan WhatsApp wajib diisi."), { status: 400 });
+  if (name.length < 3) {
+    throw Object.assign(new Error("Nama lengkap minimal 3 karakter."), { status: 400 });
+  }
+  if (!isActiveWhatsApp(whatsapp)) {
+    throw Object.assign(
+      new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit)."),
+      { status: 400 },
+    );
   }
   return {
     id: cleanText(input.id, 40) || existing?.id || makeBookingId(date, startTime, selected.code),
@@ -158,8 +170,12 @@ function buildRecord(input, existing) {
     muaMap: cleanText(input.muaMap, 300),
     totalPrice: Number(input.totalPrice) || selected.price,
     bookingFee: Number(input.bookingFee) || 100000,
+    paymentStatus: paymentStatusValue(input.paymentStatus, existing?.paymentStatus || "dp"),
     photographer: existing?.photographer || "",
-    source: existing?.source || (input.source === "copy" ? "copy" : "whatsapp"),
+    sortOrder: Number.isFinite(Number(input.sortOrder))
+      ? Number(input.sortOrder)
+      : Number(existing?.sortOrder) || Date.now(),
+    source: existing?.source || (input.source === "copy" ? "copy" : input.source === "admin" || input.source === "mock" ? "admin" : "whatsapp"),
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 }
@@ -172,15 +188,17 @@ function assertSlot(state, record) {
     start: record.startTime,
     end: record.endTime,
     ignoreId: record.id,
+    photographers: state.photographers,
   });
   if (!status.ok) throw Object.assign(new Error(status.message), { status: 409 });
 }
 
 function assignPhotographer(state, record, requested, auto) {
+  const ids = photographerIds(state.photographers);
   const taken = takenPhotographers(state.bookings, record.date, record.startTime, record.endTime, record.id);
   if (!auto) {
     if (!requested) return "";
-    if (!PHOTOGRAPHERS.includes(requested)) {
+    if (!ids.includes(requested)) {
       throw Object.assign(new Error("Fotografer tidak dikenali."), { status: 400 });
     }
     if (taken.has(requested)) {
@@ -189,7 +207,32 @@ function assignPhotographer(state, record, requested, auto) {
     return requested;
   }
   if (record.photographer && !taken.has(record.photographer)) return record.photographer;
-  return firstFreePhotographer(state.bookings, record.date, record.startTime, record.endTime, record.id);
+  return firstFreePhotographer(state.bookings, record.date, record.startTime, record.endTime, record.id, state.photographers);
+}
+
+function buildMock(input, existing) {
+  const name = cleanText(input.name, 80);
+  const whatsapp = cleanText(input.whatsapp, 20);
+  if (name.length < 3) {
+    throw Object.assign(new Error("Nama lengkap minimal 3 karakter."), { status: 400 });
+  }
+  if (!isActiveWhatsApp(whatsapp)) {
+    throw Object.assign(
+      new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit)."),
+      { status: 400 },
+    );
+  }
+  const selected = findPackage(input.packageId) || packages[0];
+  return {
+    id: cleanText(input.id, 40) || existing?.id || `mock-${Date.now().toString(36)}`,
+    name,
+    whatsapp,
+    packageId: selected.id,
+    packageName: selected.name,
+    location: cleanText(input.location, 160),
+    notes: cleanText(input.notes, 500),
+    createdAt: existing?.createdAt || new Date().toISOString(),
+  };
 }
 
 function saveBooking(state, record) {
@@ -257,13 +300,25 @@ async function handleAdminBookings(req, res) {
         record.id = `${record.id}-${Date.now().toString(36).slice(-3)}`;
       }
       assertSlot(state, record);
-      record.photographer = assignPhotographer(state, record, cleanText(body.photographer, 1), false);
+      record.photographer = assignPhotographer(state, record, cleanText(body.photographer, 8).toUpperCase(), false);
       record.source = existing?.source || "admin";
       savedId = record.id;
-      return saveBooking(state, record);
+      const withBooking = saveBooking(state, record);
+      const mockId = cleanText(body.mockId, 40);
+      if (!mockId) return withBooking;
+      return {
+        ...withBooking,
+        mocks: (withBooking.mocks || []).filter((item) => item.id !== mockId),
+      };
     });
     const saved = next.bookings.find((item) => item.id === savedId);
-    return send(res, 200, { booking: saved, bookings: next.bookings, blocks: next.blocks });
+    return send(res, 200, {
+      booking: saved,
+      bookings: next.bookings,
+      blocks: next.blocks,
+      photographers: next.photographers,
+      mocks: next.mocks,
+    });
   }
   if (req.method === "DELETE") {
     const id = url.searchParams.get("id");
@@ -316,6 +371,112 @@ async function handleAdminBlocks(req, res) {
   return send(res, 405, { message: "Metode tidak didukung." });
 }
 
+async function handleAdminPhotographers(req, res) {
+  if (!isAdmin(req)) return send(res, 401, { message: "Sesi admin berakhir. Masuk lagi." });
+  const url = new URL(req.url || "/", "http://localhost");
+  if (req.method === "POST" || req.method === "PUT") {
+    const body = await readBody(req);
+    const next = await updateState((state) => {
+      const current = normalizePhotographers(state.photographers);
+      const requestedId = cleanText(body.id, 8).toUpperCase();
+      if (req.method === "PUT") {
+        const index = current.findIndex((item) => item.id === requestedId);
+        if (index < 0) throw Object.assign(new Error("Fotografer tidak ditemukan."), { status: 404 });
+        current[index] = {
+          id: requestedId,
+          name: cleanText(body.name, 80) || current[index].name,
+          phone: cleanText(body.phone, 20),
+          notes: cleanText(body.notes, 240),
+        };
+        return { ...state, photographers: current };
+      }
+      let id = requestedId;
+      if (!id) {
+        const used = new Set(current.map((item) => item.id));
+        id = "A";
+        while (used.has(id)) id = String.fromCharCode(id.charCodeAt(0) + 1);
+      }
+      if (current.some((item) => item.id === id)) {
+        throw Object.assign(new Error("ID fotografer sudah dipakai."), { status: 409 });
+      }
+      return {
+        ...state,
+        photographers: current.concat({
+          id,
+          name: cleanText(body.name, 80) || `Fotografer ${id}`,
+          phone: cleanText(body.phone, 20),
+          notes: cleanText(body.notes, 240),
+        }),
+      };
+    });
+    return send(res, 200, { photographers: next.photographers, bookings: next.bookings, blocks: next.blocks, mocks: next.mocks });
+  }
+  if (req.method === "DELETE") {
+    const id = cleanText(url.searchParams.get("id"), 8).toUpperCase();
+    const next = await updateState((state) => {
+      const current = normalizePhotographers(state.photographers);
+      if (current.length <= 1) {
+        throw Object.assign(new Error("Minimal satu fotografer harus tetap ada."), { status: 400 });
+      }
+      if (!current.some((item) => item.id === id)) {
+        throw Object.assign(new Error("Fotografer tidak ditemukan."), { status: 404 });
+      }
+      return {
+        ...state,
+        photographers: current.filter((item) => item.id !== id),
+        bookings: state.bookings.map((booking) =>
+          booking.photographer === id ? { ...booking, photographer: "" } : booking,
+        ),
+      };
+    });
+    return send(res, 200, { photographers: next.photographers, bookings: next.bookings, blocks: next.blocks, mocks: next.mocks });
+  }
+  return send(res, 405, { message: "Metode tidak didukung." });
+}
+
+async function handleAdminMocks(req, res) {
+  if (!isAdmin(req)) return send(res, 401, { message: "Sesi admin berakhir. Masuk lagi." });
+  const url = new URL(req.url || "/", "http://localhost");
+  if (req.method === "POST" || req.method === "PUT") {
+    const body = await readBody(req);
+    let savedId = "";
+    const next = await updateState((state) => {
+      const mocks = Array.isArray(state.mocks) ? state.mocks.slice() : [];
+      const existing = mocks.find((item) => item.id === cleanText(body.id, 40));
+      if (req.method === "PUT" && !existing) {
+        throw Object.assign(new Error("Mock customer tidak ditemukan."), { status: 404 });
+      }
+      const record = buildMock(body, existing);
+      savedId = record.id;
+      const index = mocks.findIndex((item) => item.id === record.id);
+      if (index >= 0) mocks[index] = record;
+      else mocks.push(record);
+      return { ...state, mocks };
+    });
+    return send(res, 200, {
+      mock: next.mocks.find((item) => item.id === savedId),
+      mocks: next.mocks,
+      bookings: next.bookings,
+      blocks: next.blocks,
+      photographers: next.photographers,
+    });
+  }
+  if (req.method === "DELETE") {
+    const id = url.searchParams.get("id");
+    const next = await updateState((state) => ({
+      ...state,
+      mocks: (state.mocks || []).filter((item) => item.id !== id),
+    }));
+    return send(res, 200, {
+      mocks: next.mocks,
+      bookings: next.bookings,
+      blocks: next.blocks,
+      photographers: next.photographers,
+    });
+  }
+  return send(res, 405, { message: "Metode tidak didukung." });
+}
+
 const routes = {
   "/api/auth": handleAuth,
   "/api/availability": handleAvailability,
@@ -323,6 +484,8 @@ const routes = {
   "/api/admin/schedule": handleAdminSchedule,
   "/api/admin/bookings": handleAdminBookings,
   "/api/admin/blocks": handleAdminBlocks,
+  "/api/admin/photographers": handleAdminPhotographers,
+  "/api/admin/mocks": handleAdminMocks,
 };
 
 export async function handleApi(req, res, forcedPath) {

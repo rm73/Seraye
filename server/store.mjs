@@ -1,7 +1,22 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { DEFAULT_PHOTOGRAPHERS, normalizePhotographers } from "../src/schedule.js";
 
-const emptyState = () => ({ bookings: [], blocks: [] });
+const emptyState = () => ({
+  bookings: [],
+  blocks: [],
+  photographers: DEFAULT_PHOTOGRAPHERS.map((item) => ({ ...item })),
+  mocks: [],
+});
+
+function normalizeState(parsed) {
+  return {
+    bookings: Array.isArray(parsed?.bookings) ? parsed.bookings : [],
+    blocks: Array.isArray(parsed?.blocks) ? parsed.blocks : [],
+    photographers: normalizePhotographers(parsed?.photographers),
+    mocks: Array.isArray(parsed?.mocks) ? parsed.mocks : [],
+  };
+}
 
 function bookingsFile() {
   return process.env.BOOKINGS_PATH || path.join(process.cwd(), "data", "bookings.json");
@@ -39,11 +54,7 @@ async function kvCommand(command) {
 async function readKv() {
   const result = await kvCommand(["GET", "seraye-schedule"]);
   if (!result) return emptyState();
-  const parsed = JSON.parse(result);
-  return {
-    bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
-    blocks: Array.isArray(parsed.blocks) ? parsed.blocks : [],
-  };
+  return normalizeState(JSON.parse(result));
 }
 
 async function writeKv(state) {
@@ -53,11 +64,7 @@ async function writeKv(state) {
 async function readFileState() {
   try {
     const raw = await readFile(bookingsFile(), "utf8");
-    const parsed = JSON.parse(raw);
-    return {
-      bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
-      blocks: Array.isArray(parsed.blocks) ? parsed.blocks : [],
-    };
+    return normalizeState(JSON.parse(raw));
   } catch (error) {
     if (error.code === "ENOENT") return emptyState();
     throw error;
