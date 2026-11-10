@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   buildBookingId,
+  isGoogleMapsLink,
   buildWhatsAppMessage,
   buildWhatsAppUrl,
   isActiveWhatsApp,
@@ -242,7 +243,7 @@ export default function App() {
       if (!makeupTime) items.push({ key: "makeupTime", label: "Jam make up" });
       if (!hairStyle) items.push({ key: "hairStyle", label: "Hijabdo atau Hairdo" });
       if (muaAddress.trim().length < 8) items.push({ key: "muaAddress", label: "Alamat lengkap untuk MUA" });
-      if (muaMap.trim().length < 4) items.push({ key: "muaMap", label: "Google Maps" });
+      if (!isGoogleMapsLink(muaMap)) items.push({ key: "muaMap", label: "Google Maps (tautan https://maps.app.goo.gl/ atau google.com/maps)" });
     }
     return items;
   }, [date, earliestDate, hairStyle, makeupDate, makeupMin, makeupTime, muaAddress, muaMap, name, needsMuaFields, startTime, whatsapp]);
@@ -747,7 +748,7 @@ export default function App() {
                       value={muaMap}
                       onChange={(event) => setMuaMap(event.target.value)}
                       rows={2}
-                      placeholder="Tempel tautan Google Maps alamat MUA"
+                      placeholder="https://maps.app.goo.gl/…"
                     />
                   </label>
                   <p className="hint">DP minimum {rupiah(MUA_DP)} karena paket langsung mengunci fotografer dan MUA. Jika ada kendala dalam pembokingan bisa menghubungi admin.</p>
@@ -788,8 +789,8 @@ export default function App() {
                     onClick={openPicker}
                     onMouseEnter={openPicker}
                   />
-                  {date && sessionStart && slot.message ? (
-                    <span className={slot.ok ? "hint" : "hint hint-alert"}>{slot.message}</span>
+                  {date && sessionStart && slot.message && !slot.ok ? (
+                    <span className="hint hint-alert">{slot.message}</span>
                   ) : null}
                   {date && sessionStart && slot.ok ? (
                     <span className="hint">Sesi {sessionStart}–{sessionEnd}</span>

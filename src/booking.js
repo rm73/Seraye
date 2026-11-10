@@ -10,6 +10,18 @@ export function buildBookingId({ date, startTime, code }) {
   return `${day}${month}${year}${start}${code}`;
 }
 
+export function buildMockId({ date, startTime, packageName }) {
+  const [year, month, day] = String(date || "").split("-");
+  const start = String(startTime || "").slice(0, 5).replace(":", "");
+  const name = String(packageName || "").replace(/\s+/g, "");
+  if (!day || !month || !year || start.length < 4 || !name) return "";
+  return `M${day}${month}${year}${start}${name}`.slice(0, 40);
+}
+
+export function isGoogleMapsLink(value) {
+  return /https?:\/\/(?:maps\.app\.goo\.gl\/\S*|goo\.gl\/maps\S*|(?:www\.)?google\.(?:com|co\.id)\/maps\S*|maps\.google\.(?:com|co\.id)\S*)/i.test(String(value || "").trim());
+}
+
 export function buildWhatsAppMessage({
   name,
   bookingId,

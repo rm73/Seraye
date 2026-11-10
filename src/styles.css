@@ -739,6 +739,7 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   margin-bottom: 16px;
 }
 .admin-form { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+.admin-form.is-top { align-items: start; }
 .admin-form h2, .admin-block h2, .admin-form .admin-row-actions, .admin-block-note { grid-column: 1 / -1; }
 .admin-block input[type="date"], .admin-block input[type="time"] {
   position: relative;
@@ -795,6 +796,17 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 }
 .admin-field { display: grid; gap: 4px; min-width: 0; }
 .admin-field.is-wide { grid-column: span 2; }
+.admin-mua-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--green);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: white;
+}
+.admin-mua-detail strong { color: var(--forest); }
+.admin-mua-detail p { margin: 0; }
 .admin-field span {
   color: var(--muted);
   font-size: 12px;

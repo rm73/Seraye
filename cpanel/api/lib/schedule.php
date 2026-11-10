@@ -108,6 +108,22 @@ function first_free_photographer($bookings, $date, $start, $end, $ignoreId) {
     return '';
 }
 
+function is_google_maps_link($value) {
+    return (bool) preg_match(
+        '#https?://(?:maps\\.app\\.goo\\.gl/\\S*|goo\\.gl/maps\\S*|(?:www\\.)?google\\.(?:com|co\\.id)/maps\\S*|maps\\.google\\.(?:com|co\\.id)\\S*)#i',
+        (string) $value
+    );
+}
+
+function make_mock_id($date, $startTime, $packageName) {
+    $parts = explode('-', (string) $date);
+    if (count($parts) !== 3) return '';
+    $start = str_replace(':', '', substr((string) $startTime, 0, 5));
+    $name = preg_replace('/\s+/', '', (string) $packageName);
+    if ($start === '' || $name === '') return '';
+    return substr('M' . $parts[2] . $parts[1] . $parts[0] . $start . $name, 0, 40);
+}
+
 function make_booking_id($date, $startTime, $code) {
     $parts = explode('-', $date);
     return $parts[2] . $parts[1] . $parts[0] . str_replace(':', '', $startTime) . $code;

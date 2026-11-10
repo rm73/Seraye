@@ -592,7 +592,9 @@ function DayBoard({
               whatsapp={booking.whatsapp}
               location={booking.location}
               notes={booking.notes}
+              startTime={booking.startTime}
               dateLabel={formatDate(booking.date)}
+              mua={booking.packageId === "sempurna" || booking.includeMua ? booking : null}
               actions={(
                 <>
                   <label>
@@ -676,7 +678,9 @@ function CustomerCard({
   whatsapp,
   location,
   notes,
+  startTime = "",
   dateLabel,
+  mua = null,
   actions,
 }) {
   const tone = mock ? "is-mock" : full ? "is-full" : "";
@@ -691,8 +695,30 @@ function CustomerCard({
           <a href={whatsAppLink(whatsapp)} target="_blank" rel="noreferrer">{whatsapp}</a>
         </FieldCell>
         <FieldCell label="Lokasi">{location || "—"}</FieldCell>
-        <FieldCell label="Catatan" wide>{notes?.trim() || "—"}</FieldCell>
+        {mock ? (
+          <FieldCell label="Catatan" wide>{notes?.trim() || "—"}</FieldCell>
+        ) : (
+          <>
+            <FieldCell label="Catatan">{notes?.trim() || "—"}</FieldCell>
+            <FieldCell label="Jam mulai">{startTime || "—"}</FieldCell>
+          </>
+        )}
         <FieldCell label="Tanggal">{dateLabel}</FieldCell>
+        {mua ? (
+          <div className="admin-mua-detail">
+            <strong>Detail MUA</strong>
+            <p>Tanggal make up: {mua.makeupDate || "—"}</p>
+            <p>Jam make up: {mua.makeupTime || "—"}</p>
+            <p>Hijabdo/Hairdo: {mua.hairStyle || "—"}</p>
+            <p>Alamat lengkap: {mua.muaAddress || "—"}</p>
+            <p>
+              Google Maps:{" "}
+              {mua.muaMap ? (
+                <a href={mua.muaMap} target="_blank" rel="noreferrer">{mua.muaMap}</a>
+              ) : "—"}
+            </p>
+          </div>
+        ) : null}
       </div>
       <div className="admin-card-actions">{actions}</div>
     </article>
@@ -826,7 +852,7 @@ function MockForm({ draft, onChange, onSubmit, onCancel }) {
   return (
     <form
       id="mock-editor"
-      className="admin-form"
+      className="admin-form is-top"
       onSubmit={(event) => {
         setAttempted(true);
         onSubmit(event);
@@ -864,7 +890,7 @@ function MockForm({ draft, onChange, onSubmit, onCancel }) {
       </label>
       <label>
         Jam mulai
-        <input type="time" value={draft.startTime || ""} onChange={(event) => onChange("startTime", event.target.value)} />
+        <input type="time" value={draft.startTime || ""} onChange={(event) => onChange("startTime", event.target.value)} required />
       </label>
       <label>
         Add-on edit foto

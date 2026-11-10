@@ -140,7 +140,13 @@ function build_record(array $input, $existing) {
         'makeupTime' => normalize_time(isset($input['makeupTime']) ? $input['makeupTime'] : ''),
         'hairStyle' => clean_text(isset($input['hairStyle']) ? $input['hairStyle'] : '', 20),
         'muaAddress' => clean_text(isset($input['muaAddress']) ? $input['muaAddress'] : '', 240),
-        'muaMap' => clean_text(isset($input['muaMap']) ? $input['muaMap'] : '', 300),
+        'muaMap' => (function () use ($input) {
+            $map = clean_text(isset($input['muaMap']) ? $input['muaMap'] : '', 300);
+            if (as_bool(isset($input['includeMua']) ? $input['includeMua'] : false) && !is_google_maps_link($map)) {
+                throw new ApiException('Tautan Google Maps harus berisi link Google, contoh https://maps.app.goo.gl/', 400);
+            }
+            return $map;
+        })(),
         'totalPrice' => (int) (isset($input['totalPrice']) ? $input['totalPrice'] : 0) ?: $selected['price'],
         'bookingFee' => (int) (isset($input['bookingFee']) ? $input['bookingFee'] : 0) ?: 100000,
         'paymentStatus' => (isset($input['paymentStatus']) && $input['paymentStatus'] === 'pelunasan')
@@ -478,20 +484,33 @@ function handle_admin_mocks() {
             $selected = find_package(isset($body['packageId']) ? $body['packageId'] : '') ?: packages()[0];
             $existing = find_by_id($state['mocks'], clean_text(isset($body['id']) ? $body['id'] : '', 40));
             if ($method === 'PUT' && !$existing) throw new ApiException('Mock customer tidak ditemukan.', 404);
+            $mockDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', isset($body['date']) ? $body['date'] : '') ? $body['date'] : '';
+            $mockStart = normalize_time(isset($body['startTime']) ? $body['startTime'] : '');
+            $mockId = make_mock_id($mockDate, $mockStart, $selected['name']);
+            if ($mockId === '') throw new ApiException('Tanggal dan jam mulai wajib diisi untuk ID mock.', 400);
+            foreach ($state['mocks'] as $item) {
+                if ($item['id'] === $mockId && (!$existing || $existing['id'] !== $mockId)) {
+                    throw new ApiException('ID mock sudah dipakai untuk tanggal, jam, dan paket ini.', 409);
+                }
+            }
             $record = [
-                'id' => $existing ? $existing['id'] : ('mock-' . bin2hex(random_bytes(4))),
+                'id' => $mockId,
                 'name' => $name,
                 'whatsapp' => $whatsapp,
                 'packageId' => $selected['id'],
                 'packageName' => $selected['name'],
                 'location' => clean_text(isset($body['location']) ? $body['location'] : '', 160),
                 'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 500),
-                'date' => preg_match('/^\d{4}-\d{2}-\d{2}$/', isset($body['date']) ? $body['date'] : '') ? $body['date'] : '',
-                'startTime' => normalize_time(isset($body['startTime']) ? $body['startTime'] : ''),
+                'date' => $mockDate,
+                'startTime' => $mockStart,
                 'extraPhotos' => max(0, (int) (isset($body['extraPhotos']) ? $body['extraPhotos'] : 0)),
                 'createdAt' => $existing ? $existing['createdAt'] : iso_now(),
             ];
-            if ($existing) {
+            if ($existing && $existing['id'] !== $record['id']) {
+                $drop = $pdo->prepare('DELETE FROM mocks WHERE id = ?');
+                $drop->execute([$existing['id']]);
+            }
+            if ($existing && $existing['id'] === $record['id']) {
                 $stmt = $pdo->prepare('UPDATE mocks SET name = ?, whatsapp = ?, package_id = ?, package_name = ?, location = ?, notes = ?, session_date = ?, start_time = ?, extra_photos = ? WHERE id = ?');
                 $stmt->execute([$record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['date'], $record['startTime'], $record['extraPhotos'], $record['id']]);
             } else {
@@ -501,6 +520,7 @@ function handle_admin_mocks() {
             $mocks = [];
             $replaced = false;
             foreach ($state['mocks'] as $item) {
+                if ($existing && $item['id'] === $existing['id'] && $existing['id'] !== $record['id']) continue;
                 if ($item['id'] === $record['id']) {
                     $mocks[] = $record;
                     $replaced = true;

@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { isActiveWhatsApp } from "../src/booking.js";
+import { buildMockId, isActiveWhatsApp, isGoogleMapsLink } from "../src/booking.js";
 import { packages } from "../src/data.js";
 import {
   addMinutes,
@@ -163,6 +163,14 @@ function buildRecord(input, existing) {
       { status: 400 },
     );
   }
+  const muaMap = cleanText(input.muaMap, 300);
+  const includeMua = Boolean(input.includeMua);
+  if (includeMua && !isGoogleMapsLink(muaMap)) {
+    throw Object.assign(
+      new Error("Tautan Google Maps harus berisi link Google, contoh https://maps.app.goo.gl/"),
+      { status: 400 },
+    );
+  }
   return {
     id: cleanText(input.id, 40) || existing?.id || makeBookingId(date, startTime, selected.code),
     name,
@@ -177,12 +185,12 @@ function buildRecord(input, existing) {
     location,
     notes: cleanText(input.notes, 500),
     extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
-    includeMua: Boolean(input.includeMua),
+    includeMua,
     makeupDate: cleanText(input.makeupDate, 10),
     makeupTime: normalizeTime(input.makeupTime),
     hairStyle: cleanText(input.hairStyle, 20),
     muaAddress: cleanText(input.muaAddress, 240),
-    muaMap: cleanText(input.muaMap, 300),
+    muaMap,
     totalPrice: Number(input.totalPrice) || selected.price,
     bookingFee: Number(input.bookingFee) || 100000,
     paymentStatus: paymentStatusValue(input.paymentStatus, existing?.paymentStatus || "dp"),
@@ -238,8 +246,14 @@ function buildMock(input, existing) {
     );
   }
   const selected = findPackage(input.packageId) || packages[0];
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(input.date || "")) ? input.date : "";
+  const startTime = normalizeTime(input.startTime);
+  const id = buildMockId({ date, startTime, packageName: selected.name });
+  if (!id) {
+    throw Object.assign(new Error("Tanggal dan jam mulai wajib diisi untuk ID mock."), { status: 400 });
+  }
   return {
-    id: cleanText(input.id, 40) || existing?.id || `mock-${Date.now().toString(36)}`,
+    id,
     name,
     whatsapp,
     packageId: selected.id,
@@ -470,10 +484,11 @@ async function handleAdminMocks(req, res) {
       }
       const record = buildMock(body, existing);
       savedId = record.id;
-      const index = mocks.findIndex((item) => item.id === record.id);
-      if (index >= 0) mocks[index] = record;
-      else mocks.push(record);
-      return { ...state, mocks };
+      const withoutPrevious = existing ? mocks.filter((item) => item.id !== existing.id) : mocks;
+      if (withoutPrevious.some((item) => item.id === record.id)) {
+        throw Object.assign(new Error("ID mock sudah dipakai untuk tanggal, jam, dan paket ini."), { status: 409 });
+      }
+      return { ...state, mocks: withoutPrevious.concat(record) };
     });
     return send(res, 200, {
       mock: next.mocks.find((item) => item.id === savedId),

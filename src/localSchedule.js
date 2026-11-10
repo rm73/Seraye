@@ -1,4 +1,4 @@
-import { buildBookingId, isActiveWhatsApp } from "./booking";
+import { buildBookingId, buildMockId, isActiveWhatsApp, isGoogleMapsLink } from "./booking";
 import { packages } from "./data";
 import {
   addMinutes,
@@ -238,6 +238,11 @@ function buildRecord(input, existing) {
   if (!isActiveWhatsApp(whatsapp)) {
     throw new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
   }
+  const muaMap = cleanText(input.muaMap, 300);
+  const includeMua = Boolean(input.includeMua);
+  if (includeMua && !isGoogleMapsLink(muaMap)) {
+    throw new Error("Tautan Google Maps harus berisi link Google, contoh https://maps.app.goo.gl/");
+  }
   return {
     id: cleanText(input.id, 40) || existing?.id || buildBookingId({ date, startTime, code: selected.code }),
     name,
@@ -252,12 +257,12 @@ function buildRecord(input, existing) {
     location,
     notes: cleanText(input.notes, 500),
     extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
-    includeMua: Boolean(input.includeMua),
+    includeMua,
     makeupDate: cleanText(input.makeupDate, 10),
     makeupTime: normalizeTime(input.makeupTime),
     hairStyle: cleanText(input.hairStyle, 20),
     muaAddress: cleanText(input.muaAddress, 240),
-    muaMap: cleanText(input.muaMap, 300),
+    muaMap,
     totalPrice: Number(input.totalPrice) || selected.price,
     bookingFee: Number(input.bookingFee) || 100000,
     paymentStatus: paymentStatusValue(input.paymentStatus, existing?.paymentStatus || "dp"),
@@ -408,8 +413,12 @@ function buildMock(input, existing) {
     throw new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
   }
   const selected = findPackage(input.packageId) || packages[0];
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(input.date || "")) ? input.date : "";
+  const startTime = normalizeTime(input.startTime);
+  const id = buildMockId({ date, startTime, packageName: selected.name });
+  if (!id) throw new Error("Tanggal dan jam mulai wajib diisi untuk ID mock.");
   return {
-    id: cleanText(input.id, 40) || existing?.id || `mock-${Date.now().toString(36)}`,
+    id,
     name,
     whatsapp,
     packageId: selected.id,
@@ -429,10 +438,12 @@ export function saveAdminMock(input, method) {
   const existing = mocks.find((item) => item.id === cleanText(input.id, 40));
   if (method === "PUT" && !existing) throw new Error("Mock customer tidak ditemukan.");
   const record = buildMock(input, existing);
-  const index = mocks.findIndex((item) => item.id === record.id);
-  if (index >= 0) mocks[index] = record;
-  else mocks.push(record);
-  const next = writeState({ ...state, mocks });
+  const withoutPrevious = existing ? mocks.filter((item) => item.id !== existing.id) : mocks;
+  if (withoutPrevious.some((item) => item.id === record.id)) {
+    throw new Error("ID mock sudah dipakai untuk tanggal, jam, dan paket ini.");
+  }
+  const nextMocks = withoutPrevious.concat(record);
+  const next = writeState({ ...state, mocks: nextMocks });
   return { mock: record, mocks: next.mocks, bookings: next.bookings, blocks: next.blocks, photographers: next.photographers };
 }
 
