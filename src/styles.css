@@ -635,22 +635,19 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   gap: 10px;
 }
 .admin-photo-list {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
 }
 .admin-photo-list li, .admin-mock-list li {
-  display: grid;
-  gap: 8px;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   background: var(--mist);
   border-radius: 12px;
   padding: 14px;
 }
-.admin-photo-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
+.admin-photo-copy { display: grid; gap: 4px; }
+.admin-photo-list .admin-row-actions { margin-top: auto; }
 .admin-block form.admin-photo-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 720px;
@@ -662,11 +659,6 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   justify-content: flex-start;
   flex-wrap: wrap;
 }
-.admin-mock-list li {
-  cursor: grab;
-  border: 1px dashed transparent;
-}
-.admin-mock-list li:active { cursor: grabbing; }
 .admin-assign-count {
   margin-top: 6px;
   font-weight: 700;
@@ -686,8 +678,10 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   box-shadow: inset 0 0 0 2px var(--green);
   background: #f3f8ee;
 }
+#photographer-editor, #mock-editor, #booking-editor { scroll-margin-top: 20px; }
 .admin-form label.is-invalid input,
-.admin-form label.is-invalid textarea {
+.admin-form label.is-invalid textarea,
+.admin-photo-form label.is-invalid input {
   border-color: var(--danger);
 }
 .field-error {
@@ -724,7 +718,7 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   gap: 12px;
 }
 .admin-bar { margin-bottom: 18px; }
-.admin-bar-actions a, .admin-bar-actions button, .admin-row-actions button, .admin-tools > button, .admin-block li button {
+.admin-bar-actions a, .admin-bar-actions button, .admin-row-actions button, .admin-tools > button, .admin-block li button, .admin-side-head > button {
   border: 1px solid var(--green);
   background: white;
   color: var(--forest);

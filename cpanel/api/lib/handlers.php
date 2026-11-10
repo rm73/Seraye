@@ -379,7 +379,11 @@ function handle_admin_photographers() {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($method === 'POST' || $method === 'PUT') {
         $body = read_body();
-        $next = with_lock(function (PDO $pdo, array $state) use ($body, $method) {
+        $phone = clean_text(isset($body['phone']) ? $body['phone'] : '', 20);
+        if (!preg_match('/^(08\d{8,12}|628\d{8,12})$/', preg_replace('/\D/', '', $phone))) {
+            throw new ApiException('Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).', 400);
+        }
+        $next = with_lock(function (PDO $pdo, array $state) use ($body, $method, $phone) {
             $current = $state['photographers'];
             $requestedId = strtoupper(clean_text(isset($body['id']) ? $body['id'] : '', 8));
             if ($method === 'PUT') {
@@ -391,7 +395,7 @@ function handle_admin_photographers() {
                 $current[$index] = [
                     'id' => $requestedId,
                     'name' => clean_text(isset($body['name']) ? $body['name'] : '', 80) ?: $current[$index]['name'],
-                    'phone' => clean_text(isset($body['phone']) ? $body['phone'] : '', 20),
+                    'phone' => $phone,
                     'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 240),
                 ];
             } else {
@@ -408,7 +412,7 @@ function handle_admin_photographers() {
                 $current[] = [
                     'id' => $id,
                     'name' => clean_text(isset($body['name']) ? $body['name'] : '', 80) ?: ('Fotografer ' . $id),
-                    'phone' => clean_text(isset($body['phone']) ? $body['phone'] : '', 20),
+                    'phone' => $phone,
                     'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 240),
                 ];
             }

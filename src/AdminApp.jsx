@@ -13,8 +13,8 @@ import {
   saveAdminPhotographer,
   setAdminToken,
 } from "./api";
-import { isActiveWhatsApp } from "./booking";
-import { packages } from "./data";
+import { isActiveWhatsApp, rupiah } from "./booking";
+import { packages, PHOTO_ADDON } from "./data";
 import { readFeedback } from "./feedback";
 import {
   addMinutes,
@@ -23,7 +23,6 @@ import {
   fullIntervals,
   normalizePhotographers,
   packageMinutes,
-  photographerLabel,
   sessionLabel,
   takenPhotographers,
 } from "./schedule";
@@ -146,7 +145,8 @@ export default function AdminApp() {
   const [blockForm, setBlockForm] = useState({ startDate: "", endDate: "", startTime: "", endTime: "", reason: "" });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [dragOverDate, setDragOverDate] = useState("");
+  const [focusTick, setFocusTick] = useState(0);
+  const [focusTarget, setFocusTarget] = useState("");
 
   async function refresh() {
     const data = await loadAdminSchedule();
@@ -265,35 +265,15 @@ export default function AdminApp() {
     }, method === "POST" ? "Booking ditambahkan." : "Booking diperbarui.");
   }
 
-  function promoteMock(mock, date = filterDate || "") {
-    setDraft({
-      ...emptyBooking,
-      name: mock.name,
-      whatsapp: mock.whatsapp,
-      packageId: mock.packageId || "sekejap",
-      location: mock.location || "",
-      notes: mock.notes || "",
-      date,
-      startTime: mock.startTime || "",
-      extraPhotos: Number(mock.extraPhotos) || 0,
-      includeMua: Boolean(packages.find((item) => item.id === mock.packageId)?.includesMua),
-      mockId: mock.id,
-    });
-    setPage("bookings");
-    setNotice(date ? `Periksa data ${mock.name} sebelum disimpan ke booking ${formatDate(date)}.` : `Lengkapi tanggal untuk naikkan ${mock.name} ke booking.`);
+  function focusEditor(id) {
+    setFocusTarget(id);
+    setFocusTick((value) => value + 1);
   }
 
-  function onMockDrop(date, event) {
-    event.preventDefault();
-    setDragOverDate("");
-    const raw = event.dataTransfer.getData("application/seraye-mock");
-    if (!raw) return;
-    try {
-      promoteMock(JSON.parse(raw), date);
-    } catch {
-      setError("Gagal membaca mock customer.");
-    }
-  }
+  useEffect(() => {
+    if (!focusTick || !focusTarget) return;
+    document.getElementById(focusTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusTick, focusTarget]);
 
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
 
@@ -462,9 +442,11 @@ export default function AdminApp() {
 
           <MockBoard
             mocks={schedule.mocks}
-            onEdit={(mock) => setMockDraft(mock)}
+            onEdit={(mock) => {
+              setMockDraft(mock);
+              focusEditor("mock-editor");
+            }}
             onDelete={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
-            onPromote={(mock) => promoteMock(mock, filterDate)}
           />
 
           {visibleDates.length === 0 ? (
@@ -480,14 +462,10 @@ export default function AdminApp() {
                 date={date}
                 bookings={schedule.bookings}
                 photographers={photographers}
-                highlightDrop={dragOverDate === date}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOverDate(date);
+                onEdit={(booking) => {
+                  setDraft(booking);
+                  focusEditor("booking-editor");
                 }}
-                onDragLeave={() => setDragOverDate("")}
-                onDrop={(event) => onMockDrop(date, event)}
-                onEdit={(booking) => setDraft(booking)}
                 onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
                 onAssign={(booking, photographer) =>
                   run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
@@ -525,22 +503,14 @@ function FeedbackBoard({ items }) {
   );
 }
 
-function MockBoard({ mocks, onEdit, onDelete, onPromote }) {
+function MockBoard({ mocks, onEdit, onDelete }) {
   return (
     <section className="admin-block admin-mocks">
       <h2>Mock customer</h2>
-      <p className="hint">Simpan calon client di sini, lalu drag ke atas ke daftar booking tanggal, atau klik Naikkan.</p>
       {mocks.length === 0 ? <p className="admin-empty">Belum ada mock customer.</p> : null}
       <ul className="admin-mock-list">
         {mocks.map((mock) => (
-          <li
-            key={mock.id}
-            draggable
-            onDragStart={(event) => {
-              event.dataTransfer.setData("application/seraye-mock", JSON.stringify(mock));
-              event.dataTransfer.effectAllowed = "move";
-            }}
-          >
+          <li key={mock.id}>
             <div>
               <strong>{mock.name}</strong>
               <p>
@@ -554,9 +524,6 @@ function MockBoard({ mocks, onEdit, onDelete, onPromote }) {
               <p>{mock.location || "Lokasi belum diisi"}</p>
             </div>
             <div className="admin-row-actions">
-              <button type="button" onClick={() => onPromote(mock)}>
-                Naikkan
-              </button>
               <button type="button" onClick={() => onEdit(mock)}>
                 Ubah
               </button>
@@ -575,10 +542,6 @@ function DayBoard({
   date,
   bookings,
   photographers,
-  highlightDrop,
-  onDragOver,
-  onDragLeave,
-  onDrop,
   onEdit,
   onDelete,
   onAssign,
@@ -595,12 +558,7 @@ function DayBoard({
   const spans = fullIntervals(bookings, date, photographers);
 
   return (
-    <section
-      className={`admin-day ${highlightDrop ? "is-drop-target" : ""}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
+    <section className="admin-day">
       <header>
         <h2>{formatDate(date)}</h2>
         <span>{dayBookings.length} booking</span>
@@ -632,11 +590,6 @@ function DayBoard({
               </div>
               <div className="admin-booking-body">
                 <p><strong>{booking.name}</strong></p>
-                <p>
-                  <span className={`crew crew-${booking.photographer || "none"}`}>
-                    {photographerLabel(booking.photographer, photographers)}
-                  </span>
-                </p>
                 <p>
                   <a href={whatsAppLink(booking.whatsapp)} target="_blank" rel="noreferrer">
                     {booking.whatsapp}
@@ -684,22 +637,37 @@ function DayBoard({
 
 function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
   const [draft, setDraft] = useState(null);
+  const [attempted, setAttempted] = useState(false);
+  const [focusTick, setFocusTick] = useState(0);
+  const phoneInvalid = attempted && draft && !isActiveWhatsApp(draft.phone || "");
+
+  useEffect(() => {
+    if (!focusTick) return;
+    document.getElementById("photographer-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusTick]);
+
+  function openDraft(next) {
+    setAttempted(false);
+    setDraft(next);
+    setFocusTick((value) => value + 1);
+  }
 
   return (
     <section className="admin-block admin-photographers">
         <div className="admin-side-head">
           <h2>Info fotografer</h2>
-          <button type="button" onClick={() => setDraft({ ...emptyPhotographer })}>
+          <button type="button" onClick={() => openDraft({ ...emptyPhotographer })}>
             Tambah
           </button>
         </div>
-        <p className="hint">CRUD data fotografer dan pantau jumlah assignment kerja.</p>
         {draft ? (
           <form
+            id="photographer-editor"
             className="admin-photo-form"
             onSubmit={async (event) => {
               event.preventDefault();
-              if (!draft.name.trim()) return;
+              setAttempted(true);
+              if (!draft.name.trim() || !isActiveWhatsApp(draft.phone || "")) return;
               const method = draft._editing ? "PUT" : "POST";
               const ok = await onSave(
                 {
@@ -731,13 +699,15 @@ function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
                 required
               />
             </label>
-            <label>
-              WhatsApp / telepon
+            <label className={phoneInvalid ? "is-invalid" : ""}>
+              WhatsApp
               <input
                 value={draft.phone}
                 onChange={(event) => setDraft({ ...draft, phone: event.target.value })}
-                placeholder="08…"
+                placeholder="08… atau 628…"
+                required
               />
+              {phoneInvalid ? <span className="field-error">Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).</span> : null}
             </label>
             <label>
               Catatan
@@ -762,17 +732,14 @@ function PhotographerPanel({ photographers, bookings, onSave, onDelete }) {
             const assignments = bookings.filter((booking) => booking.photographer === item.id).length;
             return (
               <li key={item.id}>
-                <div>
-                  <div className="admin-photo-top">
-                    <strong>{item.name}</strong>
-                    <span className={`crew crew-${item.id || "none"}`}>{item.id}</span>
-                  </div>
+                <div className="admin-photo-copy">
+                  <strong>{item.name}</strong>
                   <p>{item.phone || "Kontak belum diisi"}</p>
                   <p>{item.notes || "—"}</p>
                   <p className="admin-assign-count">{assignments} assignment</p>
                 </div>
                 <div className="admin-row-actions">
-                  <button type="button" onClick={() => setDraft({ ...item, _editing: true })}>
+                  <button type="button" onClick={() => openDraft({ ...item, _editing: true })}>
                     Ubah
                   </button>
                   <button type="button" onClick={() => onDelete(item.id)}>
@@ -794,6 +761,7 @@ function MockForm({ draft, onChange, onSubmit, onCancel }) {
 
   return (
     <form
+      id="mock-editor"
       className="admin-form"
       onSubmit={(event) => {
         setAttempted(true);
@@ -871,6 +839,7 @@ function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCan
 
   return (
     <form
+      id="booking-editor"
       className="admin-form"
       onSubmit={(event) => {
         setAttempted(true);
@@ -881,7 +850,7 @@ function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCan
         onSubmit(event);
       }}
     >
-      <h2>{draft.mockId ? "Naikkan mock ke booking" : draft.id ? "Ubah booking" : "Booking baru"}</h2>
+      <h2>{draft.id ? "Ubah booking" : "Booking baru"}</h2>
       <label className={nameInvalid ? "is-invalid" : ""}>
         Nama
         <input value={draft.name} onChange={(event) => onChange("name", event.target.value)} required />
@@ -922,22 +891,32 @@ function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCan
           <option value="pelunasan">Pelunasan</option>
         </select>
       </label>
-      <label>
-        Add-on edit foto
-        <input
-          type="number"
-          min="0"
-          value={Number(draft.extraPhotos) || 0}
-          onChange={(event) => onChange("extraPhotos", Math.max(0, Number(event.target.value) || 0))}
-        />
-      </label>
+      <div className="addon">
+        <div>
+          <strong>Add-on edit foto</strong>
+          <p>{rupiah(PHOTO_ADDON)}/foto. Opsional, bisa ditambah atau dikurangi.</p>
+        </div>
+        <div className="stepper">
+          <button
+            type="button"
+            onClick={() => onChange("extraPhotos", Math.max(0, (Number(draft.extraPhotos) || 0) - 1))}
+            aria-label="Kurangi foto"
+          >
+            −
+          </button>
+          <span>{Number(draft.extraPhotos) || 0}</span>
+          <button
+            type="button"
+            onClick={() => onChange("extraPhotos", (Number(draft.extraPhotos) || 0) + 1)}
+            aria-label="Tambah foto"
+          >
+            +
+          </button>
+        </div>
+      </div>
       <label>
         Lokasi
         <input value={draft.location} onChange={(event) => onChange("location", event.target.value)} required />
-      </label>
-      <label>
-        Pesan
-        <textarea value={draft.notes} onChange={(event) => onChange("notes", event.target.value)} rows={3} />
       </label>
       <label>
         Fotografer
@@ -949,6 +928,10 @@ function BookingForm({ draft, bookings, photographers, onChange, onSubmit, onCan
             </option>
           ))}
         </select>
+      </label>
+      <label>
+        Pesan
+        <textarea value={draft.notes} onChange={(event) => onChange("notes", event.target.value)} rows={3} />
       </label>
       <div className="admin-row-actions">
         <button className="btn btn-forest" type="submit">

@@ -393,6 +393,10 @@ async function handleAdminPhotographers(req, res) {
   const url = new URL(req.url || "/", "http://localhost");
   if (req.method === "POST" || req.method === "PUT") {
     const body = await readBody(req);
+    const phone = cleanText(body.phone, 20);
+    if (!isActiveWhatsApp(phone)) {
+      return send(res, 400, { message: "Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit)." });
+    }
     const next = await updateState((state) => {
       const current = normalizePhotographers(state.photographers);
       const requestedId = cleanText(body.id, 8).toUpperCase();
@@ -402,7 +406,7 @@ async function handleAdminPhotographers(req, res) {
         current[index] = {
           id: requestedId,
           name: cleanText(body.name, 80) || current[index].name,
-          phone: cleanText(body.phone, 20),
+          phone,
           notes: cleanText(body.notes, 240),
         };
         return { ...state, photographers: current };
@@ -421,7 +425,7 @@ async function handleAdminPhotographers(req, res) {
         photographers: current.concat({
           id,
           name: cleanText(body.name, 80) || `Fotografer ${id}`,
-          phone: cleanText(body.phone, 20),
+          phone,
           notes: cleanText(body.notes, 240),
         }),
       };

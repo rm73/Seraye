@@ -349,6 +349,10 @@ export function deleteBlock(id) {
 
 export function saveAdminPhotographer(input, method) {
   const state = readState();
+  const phone = cleanText(input.phone, 20);
+  if (!isActiveWhatsApp(phone)) {
+    throw new Error("Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).");
+  }
   const current = normalizePhotographers(state.photographers);
   const requestedId = cleanText(input.id, 8).toUpperCase();
   if (method === "PUT") {
@@ -357,7 +361,7 @@ export function saveAdminPhotographer(input, method) {
     current[index] = {
       id: requestedId,
       name: cleanText(input.name, 80) || current[index].name,
-      phone: cleanText(input.phone, 20),
+      phone,
       notes: cleanText(input.notes, 240),
     };
   } else {
@@ -371,7 +375,7 @@ export function saveAdminPhotographer(input, method) {
     current.push({
       id,
       name: cleanText(input.name, 80) || `Fotografer ${id}`,
-      phone: cleanText(input.phone, 20),
+      phone,
       notes: cleanText(input.notes, 240),
     });
   }
