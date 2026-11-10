@@ -49,6 +49,7 @@ const emptyMock = {
   packageId: "sekejap",
   location: "",
   notes: "",
+  date: "",
   startTime: "",
   extraPhotos: 0,
 };
@@ -207,7 +208,10 @@ export default function AdminApp() {
 
   const photographers = schedule.photographers;
   const dates = useMemo(() => {
-    const stamps = new Set(schedule.bookings.map((booking) => booking.date));
+    const stamps = new Set([
+      ...schedule.bookings.map((booking) => booking.date),
+      ...schedule.mocks.map((mock) => mock.date),
+    ].filter(Boolean));
     return [...stamps].sort();
   }, [schedule]);
 
@@ -225,20 +229,6 @@ export default function AdminApp() {
       setError(reason.message);
       if (!adminToken()) setAuthed(false);
       return false;
-    }
-  }
-
-  async function moveBookingUp(booking, dayBookings) {
-    const index = dayBookings.findIndex((item) => item.id === booking.id);
-    if (index <= 0) return;
-    const next = dayBookings.slice();
-    const [item] = next.splice(index, 1);
-    next.splice(index - 1, 0, item);
-    for (let position = 0; position < next.length; position += 1) {
-      const sortOrder = (position + 1) * 10;
-      if (Number(next[position].sortOrder) !== sortOrder) {
-        await saveAdminBooking({ ...next[position], sortOrder }, "PUT");
-      }
     }
   }
 
@@ -440,16 +430,7 @@ export default function AdminApp() {
             />
           ) : null}
 
-          <MockBoard
-            mocks={schedule.mocks}
-            onEdit={(mock) => {
-              setMockDraft(mock);
-              focusEditor("mock-editor");
-            }}
-            onDelete={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
-          />
-
-          {visibleDates.length === 0 ? (
+          {visibleDates.length === 0 && (filterDate || schedule.mocks.every((mock) => mock.date)) ? (
             <p className="admin-empty">
               {filterDate
                 ? `Tidak ada booking pada ${formatDate(filterDate)}.`
@@ -461,22 +442,72 @@ export default function AdminApp() {
                 key={date}
                 date={date}
                 bookings={schedule.bookings}
+                mocks={schedule.mocks}
                 photographers={photographers}
                 onEdit={(booking) => {
                   setDraft(booking);
                   focusEditor("booking-editor");
                 }}
+                onEditMock={(mock) => {
+                  setMockDraft(mock);
+                  focusEditor("mock-editor");
+                }}
                 onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
+                onDeleteMock={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
                 onAssign={(booking, photographer) =>
                   run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
                 }
                 onPayment={(booking, paymentStatus) =>
                   run(() => saveAdminBooking({ ...booking, paymentStatus }, "PUT"), "Status pembayaran diperbarui.")
                 }
-                onMoveUp={(booking, dayBookings) => run(() => moveBookingUp(booking, dayBookings), "Urutan booking diperbarui.")}
               />
             ))
           )}
+          {!filterDate && schedule.mocks.some((mock) => !mock.date) ? (
+            <section className="admin-day">
+              <header>
+                <h2>Tanggal belum diisi</h2>
+                <span>{schedule.mocks.filter((mock) => !mock.date).length} mock</span>
+              </header>
+              <div className="admin-table">
+                {schedule.mocks.filter((mock) => !mock.date).map((mock) => (
+                  <CustomerCard
+                    key={mock.id}
+                    mock
+                    idLabel="MOCK BOOKING"
+                    idValue={mock.id}
+                    name={mock.name}
+                    addons={Number(mock.extraPhotos) || 0}
+                    packageName={mock.packageName || mock.packageId}
+                    whatsapp={mock.whatsapp}
+                    location={mock.location}
+                    notes={mock.notes}
+                    dateLabel="—"
+                    actions={(
+                      <>
+                        <label>
+                          Status bayar
+                          <select value="dp" disabled>
+                            <option value="dp">DP</option>
+                          </select>
+                        </label>
+                        <label>
+                          Fotografer
+                          <select value="" disabled>
+                            <option value="">Belum ditugaskan</option>
+                          </select>
+                        </label>
+                        <div className="admin-row-actions">
+                          <button type="button" onClick={() => { setMockDraft(mock); focusEditor("mock-editor"); }}>Ubah</button>
+                          <button type="button" onClick={() => run(() => deleteAdminMock(mock.id), "Mock customer dihapus.")}>Hapus</button>
+                        </div>
+                      </>
+                    )}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
             </>
           )}
         </div>
@@ -503,50 +534,26 @@ function FeedbackBoard({ items }) {
   );
 }
 
-function MockBoard({ mocks, onEdit, onDelete }) {
+function FieldCell({ label, children, wide = false }) {
   return (
-    <section className="admin-block admin-mocks">
-      <h2>Mock customer</h2>
-      {mocks.length === 0 ? <p className="admin-empty">Belum ada mock customer.</p> : null}
-      <ul className="admin-mock-list">
-        {mocks.map((mock) => (
-          <li key={mock.id}>
-            <div>
-              <strong>{mock.name}</strong>
-              <p>
-                <a href={whatsAppLink(mock.whatsapp)} target="_blank" rel="noreferrer">
-                  {mock.whatsapp}
-                </a>
-                {` · ${mock.packageName || mock.packageId}`}
-              </p>
-              <p>{mock.startTime ? `Jam mulai ${mock.startTime}` : "Jam mulai belum diisi"}</p>
-              <p>Add-on edit foto: {Number(mock.extraPhotos) || 0}</p>
-              <p>{mock.location || "Lokasi belum diisi"}</p>
-            </div>
-            <div className="admin-row-actions">
-              <button type="button" onClick={() => onEdit(mock)}>
-                Ubah
-              </button>
-              <button type="button" onClick={() => onDelete(mock.id)}>
-                Hapus
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className={wide ? "admin-field is-wide" : "admin-field"}>
+      <span>{label}</span>
+      <strong>{children}</strong>
+    </div>
   );
 }
 
 function DayBoard({
   date,
   bookings,
+  mocks,
   photographers,
   onEdit,
+  onEditMock,
   onDelete,
+  onDeleteMock,
   onAssign,
   onPayment,
-  onMoveUp,
 }) {
   const dayBookings = bookings
     .filter((booking) => booking.date === date)
@@ -555,13 +562,14 @@ function DayBoard({
       if (order !== 0) return order;
       return a.startTime.localeCompare(b.startTime);
     });
+  const dayMocks = mocks.filter((mock) => mock.date === date);
   const spans = fullIntervals(bookings, date, photographers);
 
   return (
     <section className="admin-day">
       <header>
         <h2>{formatDate(date)}</h2>
-        <span>{dayBookings.length} booking</span>
+        <span>{dayBookings.length} booking · {dayMocks.length} mock</span>
       </header>
       {spans.map((span) => (
         <p key={`${span.start}-${span.end}`} className="admin-full">
@@ -573,65 +581,121 @@ function DayBoard({
           const full = bookingIsInFullBlock(booking, bookings, photographers);
           const taken = takenPhotographers(bookings, booking.date, booking.startTime, booking.endTime, booking.id);
           return (
-            <article key={booking.id} className={full ? "admin-booking-card is-full" : "admin-booking-card"}>
-              <div className="admin-booking-id">
-                <strong>ID Booking</strong>
-                <span>{booking.id}</span>
-                <label>
-                  Status bayar
-                  <select
-                    value={booking.paymentStatus === "pelunasan" ? "pelunasan" : "dp"}
-                    onChange={(event) => onPayment(booking, event.target.value)}
-                  >
-                    <option value="dp">DP</option>
-                    <option value="pelunasan">Pelunasan</option>
-                  </select>
-                </label>
-              </div>
-              <div className="admin-booking-body">
-                <p><strong>{booking.name}</strong></p>
-                <p>
-                  <a href={whatsAppLink(booking.whatsapp)} target="_blank" rel="noreferrer">
-                    {booking.whatsapp}
-                  </a>
-                </p>
-                <p>
-                  {booking.packageName} · {sessionLabel(booking.startTime, booking.endTime)} ({booking.minutes} menit)
-                </p>
-                <p>{booking.location || "Titik temu belum diisi"}</p>
-                <p>Add-on edit foto: {Number(booking.extraPhotos) || 0}</p>
-                <p>{booking.notes?.trim() || "—"}</p>
-                {booking.includeMua ? <p>Include Paket MUA</p> : null}
-                {booking.makeupDate ? <p>Make up {booking.makeupDate} {booking.makeupTime} · {booking.hairStyle}</p> : null}
-                {booking.muaAddress ? <p>{booking.muaAddress}</p> : null}
-                <label>
-                  Fotografer
-                  <select value={booking.photographer || ""} onChange={(event) => onAssign(booking, event.target.value)}>
-                    <option value="">Belum ditugaskan</option>
-                    {photographers.map((item) => (
-                      <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="admin-row-actions">
-                <button type="button" onClick={() => onMoveUp(booking, dayBookings)} title="Geser ke atas">
-                  Naik
-                </button>
-                <button type="button" onClick={() => onEdit(booking)}>
-                  Ubah
-                </button>
-                <button type="button" onClick={() => onDelete(booking.id)}>
-                  Hapus
-                </button>
-              </div>
-            </article>
+            <CustomerCard
+              key={booking.id}
+              full={full}
+              idLabel="ID Booking"
+              idValue={booking.id}
+              name={booking.name}
+              addons={Number(booking.extraPhotos) || 0}
+              packageName={booking.packageName}
+              whatsapp={booking.whatsapp}
+              location={booking.location}
+              notes={booking.notes}
+              dateLabel={formatDate(booking.date)}
+              actions={(
+                <>
+                  <label>
+                    Status bayar
+                    <select
+                      value={booking.paymentStatus === "pelunasan" ? "pelunasan" : "dp"}
+                      onChange={(event) => onPayment(booking, event.target.value)}
+                    >
+                      <option value="dp">DP</option>
+                      <option value="pelunasan">Pelunasan</option>
+                    </select>
+                  </label>
+                  <label>
+                    Fotografer
+                    <select value={booking.photographer || ""} onChange={(event) => onAssign(booking, event.target.value)}>
+                      <option value="">Belum ditugaskan</option>
+                      {photographers.map((item) => (
+                        <option key={item.id} value={item.id} disabled={taken.has(item.id)}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="admin-row-actions">
+                    <button type="button" onClick={() => onEdit(booking)}>Ubah</button>
+                    <button type="button" onClick={() => onDelete(booking.id)}>Hapus</button>
+                  </div>
+                </>
+              )}
+            />
           );
         })}
+        {dayMocks.map((mock) => (
+          <CustomerCard
+            key={mock.id}
+            mock
+            idLabel="MOCK BOOKING"
+            idValue={mock.id}
+            name={mock.name}
+            addons={Number(mock.extraPhotos) || 0}
+            packageName={mock.packageName || mock.packageId}
+            whatsapp={mock.whatsapp}
+            location={mock.location}
+            notes={mock.notes}
+            dateLabel={formatDate(mock.date)}
+            actions={(
+              <>
+                <label>
+                  Status bayar
+                  <select value="dp" disabled>
+                    <option value="dp">DP</option>
+                  </select>
+                </label>
+                <label>
+                  Fotografer
+                  <select value="" disabled>
+                    <option value="">Belum ditugaskan</option>
+                  </select>
+                </label>
+                <div className="admin-row-actions">
+                  <button type="button" onClick={() => onEditMock(mock)}>Ubah</button>
+                  <button type="button" onClick={() => onDeleteMock(mock.id)}>Hapus</button>
+                </div>
+              </>
+            )}
+          />
+        ))}
       </div>
     </section>
+  );
+}
+
+function CustomerCard({
+  mock = false,
+  full = false,
+  idLabel,
+  idValue,
+  name,
+  addons,
+  packageName,
+  whatsapp,
+  location,
+  notes,
+  dateLabel,
+  actions,
+}) {
+  const tone = mock ? "is-mock" : full ? "is-full" : "";
+  return (
+    <article className={`admin-booking-card ${tone}`}>
+      <div className="admin-sheet">
+        <FieldCell label={idLabel}>{idValue}</FieldCell>
+        <FieldCell label="Nama">{name}</FieldCell>
+        <FieldCell label="Add-on">{addons} foto</FieldCell>
+        <FieldCell label="Paket">{packageName}</FieldCell>
+        <FieldCell label="Nomor WA">
+          <a href={whatsAppLink(whatsapp)} target="_blank" rel="noreferrer">{whatsapp}</a>
+        </FieldCell>
+        <FieldCell label="Lokasi">{location || "—"}</FieldCell>
+        <FieldCell label="Catatan" wide>{notes?.trim() || "—"}</FieldCell>
+        <FieldCell label="Tanggal">{dateLabel}</FieldCell>
+      </div>
+      <div className="admin-card-actions">{actions}</div>
+    </article>
   );
 }
 
@@ -769,6 +833,10 @@ function MockForm({ draft, onChange, onSubmit, onCancel }) {
       }}
     >
       <h2>{draft.id ? "Ubah mock customer" : "Mock customer baru"}</h2>
+      <label>
+        Tanggal
+        <input type="date" value={draft.date || ""} onChange={(event) => onChange("date", event.target.value)} required />
+      </label>
       <label className={nameInvalid ? "is-invalid" : ""}>
         Nama
         <input value={draft.name} onChange={(event) => onChange("name", event.target.value)} required />

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS mocks (
   package_name VARCHAR(80) NOT NULL,
   location VARCHAR(160) NOT NULL DEFAULT '',
   notes VARCHAR(500) NOT NULL DEFAULT '',
+  session_date CHAR(10) NOT NULL DEFAULT '',
   start_time VARCHAR(5) NOT NULL DEFAULT '',
   extra_photos INT NOT NULL DEFAULT 0,
   created_at VARCHAR(40) NOT NULL,

@@ -100,6 +100,7 @@ function ensure_schema(PDO $pdo) {
           package_name VARCHAR(80) NOT NULL,
           location VARCHAR(160) NOT NULL DEFAULT \'\',
           notes VARCHAR(500) NOT NULL DEFAULT \'\',
+          session_date CHAR(10) NOT NULL DEFAULT \'\',
           start_time VARCHAR(5) NOT NULL DEFAULT \'\',
           extra_photos INT NOT NULL DEFAULT 0,
           created_at VARCHAR(40) NOT NULL,
@@ -108,6 +109,7 @@ function ensure_schema(PDO $pdo) {
     );
     add_column_if_missing($pdo, 'bookings', 'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'dp'");
     add_column_if_missing($pdo, 'bookings', 'sort_order', 'BIGINT NOT NULL DEFAULT 0');
+    add_column_if_missing($pdo, 'mocks', 'session_date', "CHAR(10) NOT NULL DEFAULT ''");
     add_column_if_missing($pdo, 'mocks', 'start_time', "VARCHAR(5) NOT NULL DEFAULT ''");
     add_column_if_missing($pdo, 'mocks', 'extra_photos', 'INT NOT NULL DEFAULT 0');
 }
@@ -214,6 +216,7 @@ function read_state(PDO $pdo) {
             'packageName' => $row['package_name'],
             'location' => $row['location'],
             'notes' => $row['notes'],
+            'date' => isset($row['session_date']) ? $row['session_date'] : '',
             'startTime' => isset($row['start_time']) ? $row['start_time'] : '',
             'extraPhotos' => isset($row['extra_photos']) ? (int) $row['extra_photos'] : 0,
             'createdAt' => $row['created_at'],

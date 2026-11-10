@@ -246,6 +246,7 @@ function buildMock(input, existing) {
     packageName: selected.name,
     location: cleanText(input.location, 160),
     notes: cleanText(input.notes, 500),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(String(input.date || "")) ? input.date : "",
     startTime: normalizeTime(input.startTime),
     extraPhotos: Math.max(0, Number(input.extraPhotos) || 0),
     createdAt: existing?.createdAt || new Date().toISOString(),
