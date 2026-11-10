@@ -1,0 +1,31 @@
+DirectoryIndex index.html
+Options -Indexes -MultiViews
+
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/svg+xml .svg
+</IfModule>
+
+# cPanel/CGI sering membuang header Authorization. Tanpa ini login admin gagal.
+CGIPassAuth On
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  RewriteRule ^api/config\.php$ - [F,L]
+  RewriteRule ^api/lib(/|$) - [F,L]
+
+  RewriteCond %{REQUEST_URI} !/api/index\.php$
+  RewriteRule ^api/ api/index.php [L,QSA]
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>

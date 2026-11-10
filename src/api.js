@@ -1,3 +1,4 @@
+import { saveFeedback } from "./feedback";
 import * as localSchedule from "./localSchedule";
 
 const TOKEN_KEY = "seraye-admin-token";
@@ -111,30 +112,14 @@ export function deleteBlock(id) {
   );
 }
 
-export function saveAdminPhotographer(photographer, method) {
-  return localOrServer(
-    () => localSchedule.saveAdminPhotographer(photographer, method),
-    () => request("/api/admin/photographers", { method, body: photographer, auth: true }),
-  );
-}
-
-export function deleteAdminPhotographer(id) {
-  return localOrServer(
-    () => localSchedule.deleteAdminPhotographer(id),
-    () => request(`/api/admin/photographers?id=${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
-  );
-}
-
-export function saveAdminMock(mock, method) {
-  return localOrServer(
-    () => localSchedule.saveAdminMock(mock, method),
-    () => request("/api/admin/mocks", { method, body: mock, auth: true }),
-  );
-}
-
-export function deleteAdminMock(id) {
-  return localOrServer(
-    () => localSchedule.deleteAdminMock(id),
-    () => request(`/api/admin/mocks?id=${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
-  );
+export async function submitFeedback(entry) {
+  try {
+    return await request("/api/feedback", { method: "POST", body: entry });
+  } catch (error) {
+    if (error?.message === "Tidak ditemukan.") {
+      saveFeedback(entry);
+      return { local: true };
+    }
+    throw error;
+  }
 }

@@ -430,89 +430,21 @@ export default function AdminApp() {
             onDelete={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
             onPromote={(mock) => promoteMock(mock, filterDate)}
           />
-
-          {visibleDates.length === 0 ? (
-            <p className="admin-empty">
-              Belum ada booking. Tambah booking, naikkan mock customer (drag ke tanggal), atau tunggu klien dari situs.
-            </p>
-          ) : (
-            visibleDates.map((date) => (
-              <DayBoard
-                key={date}
-                date={date}
-                bookings={schedule.bookings}
-                photographers={photographers}
-                highlightDrop={dragOverDate === date}
-                onDragOver={(event) => {
-                  if (![...event.dataTransfer.types].includes("application/seraye-mock")) return;
-                  event.preventDefault();
-                  setDragOverDate(date);
-                }}
-                onDragLeave={() => setDragOverDate((current) => (current === date ? "" : current))}
-                onDrop={(event) => onMockDrop(date, event)}
-                onEdit={(booking) => setDraft({ ...booking, mockId: "" })}
-                onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
-                onAssign={(booking, photographer) =>
-                  run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
-                }
-                onPayment={(booking, paymentStatus) =>
-                  run(() => saveAdminBooking({ ...booking, paymentStatus }, "PUT"), "Status pembayaran diperbarui.")
-                }
-                onMoveUp={(booking, siblings) => {
-                  const index = siblings.findIndex((item) => item.id === booking.id);
-                  if (index <= 0) return;
-                  const above = siblings[index - 1];
-                  run(async () => {
-                    await saveAdminBooking({ ...booking, sortOrder: Number(above.sortOrder || 0) - 1 }, "PUT");
-                  }, "Booking dinaikkan.");
-                }}
-              />
-            ))
-          )}
-
-          {filterDate && !dates.includes(filterDate) ? (
-            <section
-              className={`admin-day admin-dropzone ${dragOverDate === filterDate ? "is-drop-target" : ""}`}
-              onDragOver={(event) => {
-                if (![...event.dataTransfer.types].includes("application/seraye-mock")) return;
-                event.preventDefault();
-                setDragOverDate(filterDate);
-              }}
-              onDragLeave={() => setDragOverDate((current) => (current === filterDate ? "" : current))}
-              onDrop={(event) => onMockDrop(filterDate, event)}
-            >
-              <header>
-                <h2>{formatDate(filterDate)}</h2>
-                <span>Drop mock customer ke sini</span>
-              </header>
-              <p className="admin-empty">Belum ada booking di tanggal ini. Drag mock customer ke atas ke area ini.</p>
-            </section>
-          ) : null}
-
-          <FeedbackBoard />
-        </div>
-
-        <PhotographerPanel
-          photographers={photographers}
-          bookings={schedule.bookings}
-          onSave={(payload, method) =>
-            run(() => saveAdminPhotographer(payload, method), method === "POST" ? "Fotografer ditambah." : "Fotografer diperbarui.")
-          }
-          onDelete={(id) => run(() => deleteAdminPhotographer(id), "Fotografer dihapus.")}
-        />
-      </div>
+        ))
+      )}
+      <FeedbackBoard items={schedule.feedback} />
     </main>
   );
 }
 
-function FeedbackBoard() {
-  const items = readFeedback();
+function FeedbackBoard({ items }) {
+  const list = Array.isArray(items) ? items : readFeedback();
   return (
     <details className="admin-block admin-feedback">
       <summary>Penilaian pelanggan</summary>
       <div className="rating-list">
-        {items.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
-        {items.map((item) => (
+        {list.length === 0 ? <p>Belum ada penilaian. Pelanggan mengisi lewat halaman Penilaian.</p> : null}
+        {list.map((item) => (
           <article key={item.id}>
             <span>Seraye Moments {item.service}/5 · Website Seraye {item.website}/5</span>
             <p>{item.message || "—"}</p>
