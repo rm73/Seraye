@@ -1,4 +1,4 @@
-import { SERAYE_WHATSAPP } from "./config";
+import { SERAYE_WHATSAPP } from "./config.js";
 
 export function rupiah(amount) {
   return `Rp${Number(amount).toLocaleString("id-ID")}`;

@@ -1,6 +1,6 @@
 {
+  "framework": "vite",
   "rewrites": [
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/feedback", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

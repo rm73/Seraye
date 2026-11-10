@@ -151,6 +151,7 @@ export default function AdminApp() {
       blocks: data.blocks || [],
       photographers: normalizePhotographers(data.photographers),
       mocks: Array.isArray(data.mocks) ? data.mocks : [],
+      feedback: Array.isArray(data.feedback) ? data.feedback : undefined,
       persistent: data.persistent,
     });
     setAuthed(true);
@@ -186,6 +187,7 @@ export default function AdminApp() {
           blocks: data.blocks || [],
           photographers: normalizePhotographers(data.photographers),
           mocks: Array.isArray(data.mocks) ? data.mocks : [],
+          feedback: Array.isArray(data.feedback) ? data.feedback : undefined,
           persistent: data.persistent,
         });
       })
@@ -219,6 +221,20 @@ export default function AdminApp() {
       setError(reason.message);
       if (!adminToken()) setAuthed(false);
       return false;
+    }
+  }
+
+  async function moveBookingUp(booking, dayBookings) {
+    const index = dayBookings.findIndex((item) => item.id === booking.id);
+    if (index <= 0) return;
+    const next = dayBookings.slice();
+    const [item] = next.splice(index, 1);
+    next.splice(index - 1, 0, item);
+    for (let position = 0; position < next.length; position += 1) {
+      const sortOrder = (position + 1) * 10;
+      if (Number(next[position].sortOrder) !== sortOrder) {
+        await saveAdminBooking({ ...next[position], sortOrder }, "PUT");
+      }
     }
   }
 
@@ -430,8 +446,45 @@ export default function AdminApp() {
             onDelete={(id) => run(() => deleteAdminMock(id), "Mock customer dihapus.")}
             onPromote={(mock) => promoteMock(mock, filterDate)}
           />
-        ))
-      )}
+
+          {visibleDates.length === 0 ? (
+            <p className="admin-empty">
+              Belum ada booking. Data masuk otomatis saat klien menekan Lanjutkan Booking via WhatsApp atau Salin pesan.
+            </p>
+          ) : (
+            visibleDates.map((date) => (
+              <DayBoard
+                key={date}
+                date={date}
+                bookings={schedule.bookings}
+                photographers={photographers}
+                highlightDrop={dragOverDate === date}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverDate(date);
+                }}
+                onDragLeave={() => setDragOverDate("")}
+                onDrop={(event) => onMockDrop(date, event)}
+                onEdit={(booking) => setDraft(booking)}
+                onDelete={(id) => run(() => deleteAdminBooking(id), "Booking dihapus.")}
+                onAssign={(booking, photographer) =>
+                  run(() => saveAdminBooking({ ...booking, photographer }, "PUT"), "Fotografer diperbarui.")
+                }
+                onPayment={(booking, paymentStatus) =>
+                  run(() => saveAdminBooking({ ...booking, paymentStatus }, "PUT"), "Status pembayaran diperbarui.")
+                }
+                onMoveUp={(booking, dayBookings) => run(() => moveBookingUp(booking, dayBookings), "Urutan booking diperbarui.")}
+              />
+            ))
+          )}
+        </div>
+        <PhotographerPanel
+          photographers={photographers}
+          bookings={schedule.bookings}
+          onSave={(photographer, method) => run(() => saveAdminPhotographer(photographer, method), "Fotografer disimpan.")}
+          onDelete={(id) => run(() => deleteAdminPhotographer(id), "Fotografer dihapus.")}
+        />
+      </div>
       <FeedbackBoard items={schedule.feedback} />
     </main>
   );

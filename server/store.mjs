@@ -7,6 +7,7 @@ const emptyState = () => ({
   blocks: [],
   photographers: DEFAULT_PHOTOGRAPHERS.map((item) => ({ ...item })),
   mocks: [],
+  feedback: [],
 });
 
 function normalizeState(parsed) {
@@ -15,6 +16,7 @@ function normalizeState(parsed) {
     blocks: Array.isArray(parsed?.blocks) ? parsed.blocks : [],
     photographers: normalizePhotographers(parsed?.photographers),
     mocks: Array.isArray(parsed?.mocks) ? parsed.mocks : [],
+    feedback: Array.isArray(parsed?.feedback) ? parsed.feedback : [],
   };
 }
 

@@ -143,27 +143,58 @@ function build_record(array $input, $existing) {
         'muaMap' => clean_text(isset($input['muaMap']) ? $input['muaMap'] : '', 300),
         'totalPrice' => (int) (isset($input['totalPrice']) ? $input['totalPrice'] : 0) ?: $selected['price'],
         'bookingFee' => (int) (isset($input['bookingFee']) ? $input['bookingFee'] : 0) ?: 100000,
+        'paymentStatus' => (isset($input['paymentStatus']) && $input['paymentStatus'] === 'pelunasan')
+            ? 'pelunasan'
+            : ($existing && isset($existing['paymentStatus']) ? $existing['paymentStatus'] : 'dp'),
         'photographer' => $existing ? $existing['photographer'] : '',
+        'sortOrder' => is_numeric(isset($input['sortOrder']) ? $input['sortOrder'] : null)
+            ? (int) $input['sortOrder']
+            : ($existing && isset($existing['sortOrder']) ? (int) $existing['sortOrder'] : (int) round(microtime(true) * 1000)),
         'source' => $source,
         'createdAt' => $existing ? $existing['createdAt'] : iso_now(),
     ];
 }
 
+function photographer_ids(array $state) {
+    if (!empty($state['photographers']) && is_array($state['photographers'])) {
+        $ids = [];
+        foreach ($state['photographers'] as $item) {
+            if (!empty($item['id'])) $ids[] = $item['id'];
+        }
+        if ($ids) return $ids;
+    }
+    return PHOTOGRAPHERS;
+}
+
 function assert_slot(array $state, array $record) {
-    $status = slot_status($state['bookings'], $state['blocks'], $record['date'], $record['startTime'], $record['endTime'], $record['id']);
+    $status = slot_status(
+        $state['bookings'],
+        $state['blocks'],
+        $record['date'],
+        $record['startTime'],
+        $record['endTime'],
+        $record['id'],
+        count(photographer_ids($state))
+    );
     if (!$status['ok']) throw new ApiException($status['message'], 409);
 }
 
 function assign_photographer(array $state, array $record, $requested, $auto) {
+    $ids = photographer_ids($state);
     $taken = taken_photographers($state['bookings'], $record['date'], $record['startTime'], $record['endTime'], $record['id']);
     if (!$auto) {
         if ($requested === '') return '';
-        if (!in_array($requested, PHOTOGRAPHERS, true)) throw new ApiException('Fotografer tidak dikenali.', 400);
+        if (!in_array($requested, $ids, true)) throw new ApiException('Fotografer tidak dikenali.', 400);
         if (isset($taken[$requested])) throw new ApiException('Fotografer ' . $requested . ' sudah ada sesi di jam ini.', 409);
         return $requested;
     }
-    if ($record['photographer'] !== '' && !isset($taken[$record['photographer']])) return $record['photographer'];
-    return first_free_photographer($state['bookings'], $record['date'], $record['startTime'], $record['endTime'], $record['id']);
+    if ($record['photographer'] !== '' && !isset($taken[$record['photographer']]) && in_array($record['photographer'], $ids, true)) {
+        return $record['photographer'];
+    }
+    foreach ($ids as $id) {
+        if (!isset($taken[$id])) return $id;
+    }
+    return '';
 }
 
 function find_by_id(array $items, $id) {
@@ -215,6 +246,8 @@ function handle_admin_schedule() {
         'bookings' => $state['bookings'],
         'blocks' => $state['blocks'],
         'feedback' => $state['feedback'],
+        'photographers' => $state['photographers'],
+        'mocks' => $state['mocks'],
         'storage' => 'mysql',
         'persistent' => true,
     ]);
@@ -236,7 +269,7 @@ function handle_admin_bookings() {
             $record['photographer'] = assign_photographer(
                 $state,
                 $record,
-                clean_text(isset($body['photographer']) ? $body['photographer'] : '', 1),
+                strtoupper(clean_text(isset($body['photographer']) ? $body['photographer'] : '', 8)),
                 false
             );
             $record['source'] = $existing ? $existing['source'] : 'admin';
@@ -252,7 +285,22 @@ function handle_admin_bookings() {
                 }
             }
             if (!$replaced) $bookings[] = $record;
-            return ['booking' => $record, 'bookings' => $bookings, 'blocks' => $state['blocks']];
+            $mocks = isset($state['mocks']) ? $state['mocks'] : [];
+            $mockId = clean_text(isset($body['mockId']) ? $body['mockId'] : '', 40);
+            if ($mockId !== '') {
+                $stmt = $pdo->prepare('DELETE FROM mocks WHERE id = ?');
+                $stmt->execute([$mockId]);
+                $mocks = array_values(array_filter($mocks, function ($item) use ($mockId) {
+                    return $item['id'] !== $mockId;
+                }));
+            }
+            return [
+                'booking' => $record,
+                'bookings' => $bookings,
+                'blocks' => $state['blocks'],
+                'photographers' => isset($state['photographers']) ? $state['photographers'] : [],
+                'mocks' => $mocks,
+            ];
         });
         send_json(200, $savedState);
     }
@@ -326,6 +374,163 @@ function handle_admin_blocks() {
     throw new ApiException('Metode tidak didukung.', 405);
 }
 
+function handle_admin_photographers() {
+    require_admin();
+    $method = $_SERVER['REQUEST_METHOD'];
+    if ($method === 'POST' || $method === 'PUT') {
+        $body = read_body();
+        $next = with_lock(function (PDO $pdo, array $state) use ($body, $method) {
+            $current = $state['photographers'];
+            $requestedId = strtoupper(clean_text(isset($body['id']) ? $body['id'] : '', 8));
+            if ($method === 'PUT') {
+                $index = null;
+                foreach ($current as $i => $item) {
+                    if ($item['id'] === $requestedId) $index = $i;
+                }
+                if ($index === null) throw new ApiException('Fotografer tidak ditemukan.', 404);
+                $current[$index] = [
+                    'id' => $requestedId,
+                    'name' => clean_text(isset($body['name']) ? $body['name'] : '', 80) ?: $current[$index]['name'],
+                    'phone' => clean_text(isset($body['phone']) ? $body['phone'] : '', 20),
+                    'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 240),
+                ];
+            } else {
+                $id = $requestedId;
+                if ($id === '') {
+                    $used = [];
+                    foreach ($current as $item) $used[$item['id']] = true;
+                    $id = 'A';
+                    while (isset($used[$id])) $id = chr(ord($id) + 1);
+                }
+                foreach ($current as $item) {
+                    if ($item['id'] === $id) throw new ApiException('ID fotografer sudah dipakai.', 409);
+                }
+                $current[] = [
+                    'id' => $id,
+                    'name' => clean_text(isset($body['name']) ? $body['name'] : '', 80) ?: ('Fotografer ' . $id),
+                    'phone' => clean_text(isset($body['phone']) ? $body['phone'] : '', 20),
+                    'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 240),
+                ];
+            }
+            $pdo->exec('DELETE FROM photographers');
+            $insert = $pdo->prepare('INSERT INTO photographers (id, name, phone, notes, sort_order) VALUES (?, ?, ?, ?, ?)');
+            foreach ($current as $index => $item) {
+                $insert->execute([$item['id'], $item['name'], $item['phone'], $item['notes'], $index]);
+            }
+            return [
+                'photographers' => $current,
+                'bookings' => $state['bookings'],
+                'blocks' => $state['blocks'],
+                'mocks' => $state['mocks'],
+            ];
+        });
+        send_json(200, $next);
+    }
+    if ($method === 'DELETE') {
+        $id = strtoupper(clean_text(isset($_GET['id']) ? $_GET['id'] : '', 8));
+        $next = with_lock(function (PDO $pdo, array $state) use ($id) {
+            $current = $state['photographers'];
+            if (count($current) <= 1) throw new ApiException('Minimal satu fotografer harus tetap ada.', 400);
+            $found = false;
+            $remaining = [];
+            foreach ($current as $item) {
+                if ($item['id'] === $id) $found = true;
+                else $remaining[] = $item;
+            }
+            if (!$found) throw new ApiException('Fotografer tidak ditemukan.', 404);
+            $stmt = $pdo->prepare('DELETE FROM photographers WHERE id = ?');
+            $stmt->execute([$id]);
+            $clear = $pdo->prepare('UPDATE bookings SET photographer = \'\' WHERE photographer = ?');
+            $clear->execute([$id]);
+            $bookings = [];
+            foreach ($state['bookings'] as $booking) {
+                if ($booking['photographer'] === $id) $booking['photographer'] = '';
+                $bookings[] = $booking;
+            }
+            return [
+                'photographers' => $remaining,
+                'bookings' => $bookings,
+                'blocks' => $state['blocks'],
+                'mocks' => $state['mocks'],
+            ];
+        });
+        send_json(200, $next);
+    }
+    throw new ApiException('Metode tidak didukung.', 405);
+}
+
+function handle_admin_mocks() {
+    require_admin();
+    $method = $_SERVER['REQUEST_METHOD'];
+    if ($method === 'POST' || $method === 'PUT') {
+        $body = read_body();
+        $next = with_lock(function (PDO $pdo, array $state) use ($body, $method) {
+            $name = clean_text(isset($body['name']) ? $body['name'] : '', 80);
+            $whatsapp = clean_text(isset($body['whatsapp']) ? $body['whatsapp'] : '', 20);
+            if (text_length($name) < 3) throw new ApiException('Nama lengkap minimal 3 karakter.', 400);
+            if (!preg_match('/^(08\d{8,12}|628\d{8,12})$/', preg_replace('/\D/', '', $whatsapp))) {
+                throw new ApiException('Nomor WhatsApp belum valid. Pakai format 08… atau 628… (10–15 digit).', 400);
+            }
+            $selected = find_package(isset($body['packageId']) ? $body['packageId'] : '') ?: packages()[0];
+            $existing = find_by_id($state['mocks'], clean_text(isset($body['id']) ? $body['id'] : '', 40));
+            if ($method === 'PUT' && !$existing) throw new ApiException('Mock customer tidak ditemukan.', 404);
+            $record = [
+                'id' => $existing ? $existing['id'] : ('mock-' . bin2hex(random_bytes(4))),
+                'name' => $name,
+                'whatsapp' => $whatsapp,
+                'packageId' => $selected['id'],
+                'packageName' => $selected['name'],
+                'location' => clean_text(isset($body['location']) ? $body['location'] : '', 160),
+                'notes' => clean_text(isset($body['notes']) ? $body['notes'] : '', 500),
+                'createdAt' => $existing ? $existing['createdAt'] : iso_now(),
+            ];
+            if ($existing) {
+                $stmt = $pdo->prepare('UPDATE mocks SET name = ?, whatsapp = ?, package_id = ?, package_name = ?, location = ?, notes = ? WHERE id = ?');
+                $stmt->execute([$record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['id']]);
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO mocks (id, name, whatsapp, package_id, package_name, location, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$record['id'], $record['name'], $record['whatsapp'], $record['packageId'], $record['packageName'], $record['location'], $record['notes'], $record['createdAt']]);
+            }
+            $mocks = [];
+            $replaced = false;
+            foreach ($state['mocks'] as $item) {
+                if ($item['id'] === $record['id']) {
+                    $mocks[] = $record;
+                    $replaced = true;
+                } else {
+                    $mocks[] = $item;
+                }
+            }
+            if (!$replaced) $mocks[] = $record;
+            return [
+                'mock' => $record,
+                'mocks' => $mocks,
+                'bookings' => $state['bookings'],
+                'blocks' => $state['blocks'],
+                'photographers' => $state['photographers'],
+            ];
+        });
+        send_json(200, $next);
+    }
+    if ($method === 'DELETE') {
+        $id = isset($_GET['id']) ? (string) $_GET['id'] : '';
+        $next = with_lock(function (PDO $pdo, array $state) use ($id) {
+            $stmt = $pdo->prepare('DELETE FROM mocks WHERE id = ?');
+            $stmt->execute([$id]);
+            return [
+                'mocks' => array_values(array_filter($state['mocks'], function ($item) use ($id) {
+                    return $item['id'] !== $id;
+                })),
+                'bookings' => $state['bookings'],
+                'blocks' => $state['blocks'],
+                'photographers' => $state['photographers'],
+            ];
+        });
+        send_json(200, $next);
+    }
+    throw new ApiException('Metode tidak didukung.', 405);
+}
+
 function handle_feedback() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new ApiException('Metode tidak didukung.', 405);
     $body = read_body();
@@ -355,6 +560,8 @@ function handle_request() {
         '/api/admin/schedule' => 'handle_admin_schedule',
         '/api/admin/bookings' => 'handle_admin_bookings',
         '/api/admin/blocks' => 'handle_admin_blocks',
+        '/api/admin/photographers' => 'handle_admin_photographers',
+        '/api/admin/mocks' => 'handle_admin_mocks',
     ];
     $path = request_path();
     if (!isset($routes[$path])) throw new ApiException('Tidak ditemukan.', 404);

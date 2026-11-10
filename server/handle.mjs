@@ -38,7 +38,22 @@ function send(res, status, body) {
 }
 
 function readBody(req) {
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return Promise.resolve(req.body);
+  }
+  if (typeof req.body === "string") {
+    if (!req.body) return Promise.resolve({});
+    try {
+      return Promise.resolve(JSON.parse(req.body));
+    } catch {
+      return Promise.reject(Object.assign(new Error("Format data tidak dikenali."), { status: 400 }));
+    }
+  }
   return new Promise((resolve, reject) => {
+    if (req.readableEnded) {
+      resolve({});
+      return;
+    }
     const chunks = [];
     let size = 0;
     req.on("data", (chunk) => {
@@ -477,10 +492,33 @@ async function handleAdminMocks(req, res) {
   return send(res, 405, { message: "Metode tidak didukung." });
 }
 
+async function handleFeedback(req, res) {
+  if (req.method !== "POST") return send(res, 405, { message: "Metode tidak didukung." });
+  const body = await readBody(req);
+  const service = Number(body.service);
+  const website = Number(body.website);
+  if (service < 1 || service > 5 || website < 1 || website > 5) {
+    return send(res, 400, { message: "Pilih bintang untuk Seraye Moments dan untuk website seraye." });
+  }
+  const entry = {
+    id: `fb${Date.now().toString(36)}`,
+    service,
+    website,
+    message: cleanText(body.message, 1000),
+    createdAt: new Date().toISOString(),
+  };
+  const next = await updateState((state) => ({
+    ...state,
+    feedback: [entry, ...(Array.isArray(state.feedback) ? state.feedback : [])],
+  }));
+  return send(res, 200, { feedback: entry, feedbackList: next.feedback });
+}
+
 const routes = {
   "/api/auth": handleAuth,
   "/api/availability": handleAvailability,
   "/api/bookings": handleClientBooking,
+  "/api/feedback": handleFeedback,
   "/api/admin/schedule": handleAdminSchedule,
   "/api/admin/bookings": handleAdminBookings,
   "/api/admin/blocks": handleAdminBlocks,

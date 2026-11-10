@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   total_price INT NOT NULL DEFAULT 0,
   booking_fee INT NOT NULL DEFAULT 100000,
   photographer VARCHAR(8) NOT NULL DEFAULT '',
+  payment_status VARCHAR(20) NOT NULL DEFAULT 'dp',
+  sort_order BIGINT NOT NULL DEFAULT 0,
   source VARCHAR(20) NOT NULL DEFAULT 'whatsapp',
   created_at VARCHAR(40) NOT NULL,
   PRIMARY KEY (id),
@@ -34,6 +36,27 @@ CREATE TABLE IF NOT EXISTS blocks (
   start_time VARCHAR(5) NOT NULL DEFAULT '',
   end_time VARCHAR(5) NOT NULL DEFAULT '',
   reason VARCHAR(120) NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS photographers (
+  id VARCHAR(8) NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  phone VARCHAR(20) NOT NULL DEFAULT '',
+  notes VARCHAR(240) NOT NULL DEFAULT '',
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS mocks (
+  id VARCHAR(40) NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  whatsapp VARCHAR(20) NOT NULL,
+  package_id VARCHAR(32) NOT NULL,
+  package_name VARCHAR(80) NOT NULL,
+  location VARCHAR(160) NOT NULL DEFAULT '',
+  notes VARCHAR(500) NOT NULL DEFAULT '',
+  created_at VARCHAR(40) NOT NULL,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

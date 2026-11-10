@@ -81,6 +81,41 @@ function ensure_schema(PDO $pdo) {
           PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS photographers (
+          id VARCHAR(8) NOT NULL,
+          name VARCHAR(80) NOT NULL,
+          phone VARCHAR(20) NOT NULL DEFAULT \'\',
+          notes VARCHAR(240) NOT NULL DEFAULT \'\',
+          sort_order INT NOT NULL DEFAULT 0,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS mocks (
+          id VARCHAR(40) NOT NULL,
+          name VARCHAR(80) NOT NULL,
+          whatsapp VARCHAR(20) NOT NULL,
+          package_id VARCHAR(32) NOT NULL,
+          package_name VARCHAR(80) NOT NULL,
+          location VARCHAR(160) NOT NULL DEFAULT \'\',
+          notes VARCHAR(500) NOT NULL DEFAULT \'\',
+          created_at VARCHAR(40) NOT NULL,
+          PRIMARY KEY (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    add_column_if_missing($pdo, 'bookings', 'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'dp'");
+    add_column_if_missing($pdo, 'bookings', 'sort_order', 'BIGINT NOT NULL DEFAULT 0');
+}
+
+function add_column_if_missing(PDO $pdo, $table, $column, $definition) {
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $stmt->execute([$table, $column]);
+    if ((int) $stmt->fetchColumn() === 0) {
+        $pdo->exec('ALTER TABLE `' . $table . '` ADD COLUMN `' . $column . '` ' . $definition);
+    }
 }
 
 function booking_from_row(array $row) {
@@ -106,7 +141,9 @@ function booking_from_row(array $row) {
         'muaMap' => $row['mua_map'],
         'totalPrice' => (int) $row['total_price'],
         'bookingFee' => (int) $row['booking_fee'],
+        'paymentStatus' => (isset($row['payment_status']) && $row['payment_status'] === 'pelunasan') ? 'pelunasan' : 'dp',
         'photographer' => $row['photographer'],
+        'sortOrder' => isset($row['sort_order']) ? (int) $row['sort_order'] : 0,
         'source' => $row['source'],
         'createdAt' => $row['created_at'],
     ];
@@ -146,7 +183,43 @@ function read_state(PDO $pdo) {
     foreach ($pdo->query('SELECT * FROM feedback ORDER BY created_at DESC, id DESC')->fetchAll() as $row) {
         $feedback[] = feedback_from_row($row);
     }
-    return ['bookings' => $bookings, 'blocks' => $blocks, 'feedback' => $feedback];
+    $photographers = [];
+    foreach ($pdo->query('SELECT * FROM photographers ORDER BY sort_order ASC, id ASC')->fetchAll() as $row) {
+        $photographers[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'phone' => $row['phone'],
+            'notes' => $row['notes'],
+        ];
+    }
+    if (!$photographers) {
+        $seed = [['A', 'Fotografer A'], ['B', 'Fotografer B'], ['C', 'Fotografer C']];
+        $insert = $pdo->prepare('INSERT INTO photographers (id, name, phone, notes, sort_order) VALUES (?, ?, \'\', \'\', ?)');
+        foreach ($seed as $index => $item) {
+            $insert->execute([$item[0], $item[1], $index]);
+            $photographers[] = ['id' => $item[0], 'name' => $item[1], 'phone' => '', 'notes' => ''];
+        }
+    }
+    $mocks = [];
+    foreach ($pdo->query('SELECT * FROM mocks ORDER BY created_at ASC, id ASC')->fetchAll() as $row) {
+        $mocks[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'whatsapp' => $row['whatsapp'],
+            'packageId' => $row['package_id'],
+            'packageName' => $row['package_name'],
+            'location' => $row['location'],
+            'notes' => $row['notes'],
+            'createdAt' => $row['created_at'],
+        ];
+    }
+    return [
+        'bookings' => $bookings,
+        'blocks' => $blocks,
+        'feedback' => $feedback,
+        'photographers' => $photographers,
+        'mocks' => $mocks,
+    ];
 }
 
 function public_schedule(array $state) {
@@ -193,6 +266,8 @@ function write_booking(PDO $pdo, array $record) {
         $record['photographer'],
         $record['source'],
         $record['createdAt'],
+        isset($record['paymentStatus']) && $record['paymentStatus'] === 'pelunasan' ? 'pelunasan' : 'dp',
+        isset($record['sortOrder']) ? (int) $record['sortOrder'] : 0,
         $record['id'],
     ];
     $check = $pdo->prepare('SELECT id FROM bookings WHERE id = ?');
@@ -204,7 +279,8 @@ function write_booking(PDO $pdo, array $record) {
               name = ?, whatsapp = ?, session_date = ?, start_time = ?, end_time = ?,
               package_id = ?, package_name = ?, package_code = ?, minutes = ?, location = ?, notes = ?,
               extra_photos = ?, include_mua = ?, makeup_date = ?, makeup_time = ?, hair_style = ?,
-              mua_address = ?, mua_map = ?, total_price = ?, booking_fee = ?, photographer = ?, source = ?, created_at = ?
+              mua_address = ?, mua_map = ?, total_price = ?, booking_fee = ?, photographer = ?, source = ?, created_at = ?,
+              payment_status = ?, sort_order = ?
             WHERE id = ?'
         );
         $stmt->execute($params);
@@ -215,8 +291,9 @@ function write_booking(PDO $pdo, array $record) {
           name, whatsapp, session_date, start_time, end_time,
           package_id, package_name, package_code, minutes, location, notes,
           extra_photos, include_mua, makeup_date, makeup_time, hair_style,
-          mua_address, mua_map, total_price, booking_fee, photographer, source, created_at, id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          mua_address, mua_map, total_price, booking_fee, photographer, source, created_at,
+          payment_status, sort_order, id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute($params);
 }

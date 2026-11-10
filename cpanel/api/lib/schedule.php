@@ -77,7 +77,8 @@ function overlapping_bookings($bookings, $date, $start, $end, $ignoreId) {
     }));
 }
 
-function slot_status($bookings, $blocks, $date, $start, $end, $ignoreId) {
+function slot_status($bookings, $blocks, $date, $start, $end, $ignoreId, $capacity = CAPACITY) {
+    $limit = max(1, (int) $capacity);
     if ($date === '' || $start === '' || $end === '') {
         return ['ok' => false, 'message' => ''];
     }
@@ -85,8 +86,8 @@ function slot_status($bookings, $blocks, $date, $start, $end, $ignoreId) {
         return ['ok' => false, 'message' => 'Tanggal atau jam ini ditutup admin. Pilih waktu lain.'];
     }
     $overlapping = overlapping_bookings($bookings, $date, $start, $end, $ignoreId);
-    if (count($overlapping) >= CAPACITY) {
-        return ['ok' => false, 'message' => 'Waktu ini sudah penuh (3 sesi berjalan bersamaan). Pilih jam lain.'];
+    if (count($overlapping) >= $limit) {
+        return ['ok' => false, 'message' => 'Waktu ini sudah penuh (' . $limit . ' sesi berjalan bersamaan). Pilih jam lain.'];
     }
     return ['ok' => true, 'message' => ''];
 }
