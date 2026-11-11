@@ -81,7 +81,7 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false }) {
   );
 }
 
-function Hero({ onCatalog }) {
+function Hero({ onPortfolio, onPricelist }) {
   const [index, setIndex] = useState(0);
   const [sliding, setSliding] = useState(true);
   const slides = [...heroSlides, heroSlides[0]];
@@ -155,10 +155,10 @@ function Hero({ onCatalog }) {
           <p className="hero-lead">Abadikan setiap momen terbaikmu dengan cara yang terbaik</p>
           <p className="hero-cta"><strong>Karena setiap momen patut dirayakan</strong></p>
           <div className="hero-actions">
-            <button className="btn btn-forest" type="button" onClick={onCatalog}>
-              Lihat katalog
+            <button className="btn btn-forest" type="button" onClick={onPortfolio}>
+              Cek Portofolio
             </button>
-            <button className="btn btn-pricelist" type="button" onClick={onCatalog}>
+            <button className="btn btn-pricelist" type="button" onClick={onPricelist}>
               Cek pricelist
             </button>
           </div>
@@ -560,7 +560,10 @@ export default function App() {
       </header>
 
       <main>
-        <Hero onCatalog={() => scrollToId("paket")} />
+        <Hero
+          onPortfolio={() => scrollToId("portofolio")}
+          onPricelist={() => scrollToId("paket")}
+        />
         <section className="catalog" id="paket">
           <div className="catalog-block">
             <div className="catalog-title">
