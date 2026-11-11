@@ -282,6 +282,7 @@ export default function App() {
         date,
         start: sessionStart,
         end: sessionEnd,
+        capacity: schedule.capacity,
       })
     : { ok: true, message: "" };
   const canBook = ready && slot.ok && scheduleReady && !saving;

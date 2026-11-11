@@ -133,6 +133,7 @@ function publicSchedule(state) {
       photographer: booking.photographer || "",
     })),
     blocks: state.blocks,
+    capacity: photographerIds(state.photographers).length,
     ...storageInfo(),
   };
 }

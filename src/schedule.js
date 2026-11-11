@@ -88,7 +88,7 @@ export function overlappingBookings(bookings, date, start, end, ignoreId) {
   );
 }
 
-export function slotStatus({ bookings, blocks, date, start, end, ignoreId, photographers }) {
+export function slotStatus({ bookings, blocks, date, start, end, ignoreId, photographers, capacity }) {
   if (!date || !start || !end) return { ok: false, reason: "incomplete", message: "" };
   if (isAdminBlocked(blocks, date, start, end)) {
     return {
@@ -97,20 +97,20 @@ export function slotStatus({ bookings, blocks, date, start, end, ignoreId, photo
       message: "Tanggal atau jam ini ditutup admin. Pilih waktu lain.",
     };
   }
-  const capacity = photographerCapacity(photographers);
+  const limit = Number(capacity) > 0 ? Number(capacity) : photographerCapacity(photographers);
   const overlapping = overlappingBookings(bookings, date, start, end, ignoreId);
-  if (overlapping.length >= capacity) {
+  if (overlapping.length >= limit) {
     return {
       ok: false,
       reason: "full",
-      message: `Waktu ini sudah penuh (${capacity} sesi berjalan bersamaan). Pilih jam lain.`,
+      message: `Waktu ini sudah penuh (${limit} sesi berjalan bersamaan). Pilih jam lain.`,
     };
   }
-  const free = capacity - overlapping.length;
+  const free = limit - overlapping.length;
   return {
     ok: true,
     reason: "open",
-    message: overlapping.length ? `${free} dari ${capacity} fotografer masih tersedia di jam ini.` : "",
+    message: overlapping.length ? `${free} dari ${limit} fotografer masih tersedia di jam ini.` : "",
   };
 }
 

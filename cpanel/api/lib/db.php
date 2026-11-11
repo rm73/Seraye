@@ -245,6 +245,7 @@ function public_schedule(array $state) {
     return [
         'bookings' => $bookings,
         'blocks' => $state['blocks'],
+        'capacity' => count(photographer_ids($state)),
         'storage' => 'mysql',
         'persistent' => true,
     ];
