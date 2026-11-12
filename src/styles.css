@@ -1023,6 +1023,11 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   gap: 12px;
 }
 .popup-card .pkg-card { cursor: default; }
+.popup-card .price {
+  font-size: clamp(20px, 5.2vw, 26px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
 .popup-head {
   display: flex;
   align-items: flex-start;

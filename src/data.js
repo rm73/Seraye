@@ -16,11 +16,6 @@ export const packages = [
     specialOffer: true,
     includesMua: true,
     image: "/assets/opt/cards/SempurnaCard.webp",
-    cardPoints: [
-      "Base Paket Sekejap",
-      "Reguler Makeup by Anadevi (75 Menit)",
-      "Free Transport MUA (Bandung Kota)",
-    ],
     points: [
       "1 Graduate",
       "60 Minutes",
