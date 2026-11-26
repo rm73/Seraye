@@ -197,6 +197,43 @@ export const faqGroups = [
   },
 ];
 
+// Konten berita sementara (statis) sampai halaman Kelola Berita admin tersambung ke backend.
+export const newsPosts = [
+  {
+    id: "tips-pose-natural",
+    title: "Tips Pose Natural & Persiapan Wisuda: Bebas Canggung di Depan Kamera",
+    image: "/assets/opt/prewisuda/DSC02997.webp",
+    caption: "Dokumentasi Sesi Outdoor Kampus",
+    paragraphs: [
+      "Wisuda adalah salah satu momen paling dinanti. Tidak sedikit wisudawan yang justru merasa canggung atau gugup di depan lensa kamera, padahal foto yang memikat bukanlah pose terbaik, melainkan ekspresi yang jujur antara wisudawan, toga, serta suasana di sekitarnya.",
+      "Pertama, latih pernapasan dan rilekskan bahu sebelum sesi dimulai. Tarik napas dalam, hembuskan perlahan, lalu hindari menahan napas atau membeku saat kamera mengarah padamu.",
+      "Kedua, beri tangan dan tubuhmu aktivitas kecil: merapikan kancing toga, melempar topi, atau berjalan santai menuju arah datangnya cahaya. Gerakan sederhana inilah yang membuat hasil foto terasa hangat dan natural.",
+    ],
+  },
+  {
+    id: "pose-duduk-estetik",
+    title: "Pose Duduk Estetik di Koridor & Perpustakaan Kampus",
+    image: "/assets/opt/wisuda/DSC01480.webp",
+    caption: "Sesi Wisuda di Koridor Kampus",
+    paragraphs: [
+      "Koridor dan perpustakaan kampus punya cahaya lembut dan garis arsitektur yang membuat foto duduk terlihat tenang dan elegan.",
+      "Pilih posisi dekat jendela agar cahaya jatuh di wajah, lalu duduk sedikit miring dari arah kamera. Letakkan buku, buket, atau ijazah di pangkuan supaya tangan punya tempat yang natural.",
+      "Tidak perlu menatap kamera di setiap frame. Sesekali pandang ke samping atau ke arah jendela untuk hasil yang lebih candid dan bercerita.",
+    ],
+  },
+  {
+    id: "harmoni-warna-kebaya",
+    title: "Harmoni Warna Kebaya, Toga & Outfit Keluarga",
+    image: "/assets/opt/wisuda/10-DSC00836.webp",
+    caption: "Foto Bersama Keluarga dan Sahabat",
+    paragraphs: [
+      "Foto bersama keluarga akan terlihat lebih rapi jika warna pakaian saling melengkapi dengan toga dan kebaya wisudawan.",
+      "Pilih satu atau dua warna utama, misalnya krem, hijau sage, atau navy, lalu hindari pola yang terlalu ramai. Bila ragu, tim Seraye siap membantu lewat personalized moodboard setelah DP dibayarkan.",
+      "Pastikan juga ukuran dan kenyamanan pakaian sudah dicoba sebelum Hari H, agar sesi berjalan santai tanpa terburu-buru.",
+    ],
+  },
+];
+
 export const terms = [
   "Apabila terjadi pembatalan (cancel) reservasi dari pihak klien, maka uang deposit/DP hangus (tidak dapat di-refund).",
   "Batas maksimal untuk pengajuan reschedule (ubah jadwal) adalah H-3 sebelum sesi foto, dan sangat bergantung pada ketersediaan fotografer kami.",
