@@ -1108,16 +1108,6 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div className="footer-brand">
-            <strong>Sèraye Moments</strong>
-            <span>Abadikan Momen Berhargamu</span>
-          </div>
-          <p>© {new Date().getFullYear()} Seraye Moments. Seluruh hak cipta dilindungi. Bandung, Indonesia.</p>
-        </div>
-      </footer>
-
       {newsOpen ? (
         <div className="popup news-overlay" role="dialog" aria-modal="true" aria-label={newsOpen.title} onClick={() => setNewsOpen(null)}>
           <article className="news-dialog" onClick={(event) => event.stopPropagation()}>
