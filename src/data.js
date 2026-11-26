@@ -205,9 +205,8 @@ export const newsPosts = [
     image: "/assets/opt/prewisuda/DSC02997.webp",
     caption: "Dokumentasi Sesi Outdoor Kampus",
     paragraphs: [
-      "Wisuda adalah salah satu momen paling dinanti. Tidak sedikit wisudawan yang justru merasa canggung atau gugup di depan lensa kamera, padahal foto yang memikat bukanlah pose terbaik, melainkan ekspresi yang jujur antara wisudawan, toga, serta suasana di sekitarnya.",
-      "Pertama, latih pernapasan dan rilekskan bahu sebelum sesi dimulai. Tarik napas dalam, hembuskan perlahan, lalu hindari menahan napas atau membeku saat kamera mengarah padamu.",
-      "Kedua, beri tangan dan tubuhmu aktivitas kecil: merapikan kancing toga, melempar topi, atau berjalan santai menuju arah datangnya cahaya. Gerakan sederhana inilah yang membuat hasil foto terasa hangat dan natural.",
+      "Wisuda adalah salah satu momen paling berharga dalam hidup, namun sering kali rasa kaku atau gugup di depan lensa kamera membuat senyum terlihat tegang. Kunci utama foto wisuda yang memikat bukanlah pose formal yang kaku, melainkan gestur luwes dan interaksi dinamis antara wisudawan, toga, serta lingkungan sekitar.",
+      "Pertama, latih pernapasan dalam dan gerakan perlahan. Saat kamera membidik, hindari menahan napas atau membeku dalam satu sudut. Coba lakukan gerakan mikro seperti merapikan kancing toga, melempar topi ke udara bersama sahabat, atau melangkah santai menuju arah datangnya cahaya alami. Ini menghasilkan foto candid yang hidup dan bercerita.",
     ],
   },
   {

@@ -188,6 +188,75 @@ function Hero({ onPortfolio, onPricelist }) {
   );
 }
 
+function NewsRail({ posts, onOpen }) {
+  const scrollerRef = useRef(null);
+  const [edges, setEdges] = useState({ start: true, end: true });
+
+  function updateEdges() {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const max = scroller.scrollWidth - scroller.clientWidth;
+    setEdges({
+      start: scroller.scrollLeft <= 2,
+      end: max <= 2 || scroller.scrollLeft >= max - 2,
+    });
+  }
+
+  useEffect(() => {
+    updateEdges();
+    const scroller = scrollerRef.current;
+    if (!scroller) return undefined;
+    scroller.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+    return () => {
+      scroller.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, [posts.length]);
+
+  function slide(direction) {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const card = scroller.querySelector(".news-card");
+    const gap = parseFloat(window.getComputedStyle(scroller).columnGap) || 18;
+    const amount = (card?.getBoundingClientRect().width || scroller.clientWidth) + gap;
+    scroller.scrollBy({ left: direction * amount, behavior: "smooth" });
+  }
+
+  return (
+    <section className="news" id="berita" aria-roledescription="carousel" aria-label="Berita dan Tips Wisuda">
+      <div className="news-head">
+        <h2>Berita &amp; Tips Wisuda</h2>
+        <p>Inspirasi pose, panduan persiapan, dan cerita di balik layar sesi wisuda.</p>
+      </div>
+      <div className="news-rail">
+        <div className="news-scroller" ref={scrollerRef}>
+          {posts.map((post) => (
+            <article key={post.id} className="news-card">
+              <button type="button" onClick={() => onOpen(post)}>
+                <img src={post.image} alt="" width="720" height="576" loading="lazy" decoding="async" />
+                <h3>{post.title}</h3>
+                <span className="news-read">
+                  Baca Artikel
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </span>
+              </button>
+            </article>
+          ))}
+        </div>
+        <button className="news-nav news-nav-prev" type="button" aria-label="Berita sebelumnya" onClick={() => slide(-1)} disabled={edges.start}>
+          <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
+        </button>
+        <button className="news-nav news-nav-next" type="button" aria-label="Berita berikutnya" onClick={() => slide(1)} disabled={edges.end}>
+          <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [packageId, setPackageId] = useState(defaultPackageId);
@@ -947,6 +1016,8 @@ export default function App() {
           </div>
         </section>
 
+        <NewsRail posts={newsPosts} onOpen={setNewsOpen} />
+
         <section className="portfolio" id="portofolio">
           <div className="section-head">
             <h2>Portofolio</h2>
@@ -992,26 +1063,6 @@ export default function App() {
               promosi kami.
             </p>
             <p>Dengan membayar DP, klien dianggap telah membaca dan menyetujui S&K lengkap kami.</p>
-          </div>
-          <div className="news" id="berita">
-            <div className="news-head">
-              <div>
-                <h2>Berita &amp; Tips Wisuda</h2>
-                <p>Inspirasi pose, panduan persiapan, dan cerita di balik layar sesi wisuda.</p>
-              </div>
-              {newsPosts.length > 3 ? <span className="news-more">Selengkapnya →</span> : null}
-            </div>
-            <div className="news-grid">
-              {newsPosts.slice(0, 3).map((post) => (
-                <article key={post.id} className="news-card">
-                  <button type="button" onClick={() => setNewsOpen(post)}>
-                    <img src={post.image} alt="" loading="lazy" decoding="async" />
-                    <h3>{post.title}</h3>
-                    <span className="news-read">Baca artikel →</span>
-                  </button>
-                </article>
-              ))}
-            </div>
           </div>
           <div className="faq-head">
             <h2>Pertanyaan yang Sering Diajukan</h2>
@@ -1068,20 +1119,28 @@ export default function App() {
       </footer>
 
       {newsOpen ? (
-        <div className="popup" role="dialog" aria-modal="true" aria-label={newsOpen.title} onClick={() => setNewsOpen(null)}>
-          <div className="popup-card news-popup" onClick={(event) => event.stopPropagation()}>
-            <button className="popup-close news-close" type="button" aria-label="Tutup" onClick={() => setNewsOpen(null)}>
-              ×
-            </button>
-            <figure>
-              <img src={newsOpen.image} alt={newsOpen.caption} />
-              <figcaption>{newsOpen.caption}</figcaption>
-            </figure>
-            <h2>{newsOpen.title}</h2>
-            {newsOpen.paragraphs.map((text) => (
-              <p key={text}>{text}</p>
-            ))}
-          </div>
+        <div className="popup news-overlay" role="dialog" aria-modal="true" aria-label={newsOpen.title} onClick={() => setNewsOpen(null)}>
+          <article className="news-dialog" onClick={(event) => event.stopPropagation()}>
+            <header className="news-dialog-bar">
+              <button className="news-dialog-close" type="button" aria-label="Tutup" onClick={() => setNewsOpen(null)}>
+                <img src="/assets/news-close.svg" alt="" width="16" height="16" />
+              </button>
+            </header>
+            <div className="news-dialog-body">
+              <figure>
+                <img src={newsOpen.image} alt="" />
+                <figcaption>{newsOpen.caption} • Seraye Moments</figcaption>
+              </figure>
+              <div className="news-dialog-copy">
+                <h2>{newsOpen.title}</h2>
+              </div>
+              <div className="news-dialog-text">
+                {newsOpen.paragraphs.map((text) => (
+                  <p key={text}>{text}</p>
+                ))}
+              </div>
+            </div>
+          </article>
         </div>
       ) : null}
 
