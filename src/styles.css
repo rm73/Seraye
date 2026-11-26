@@ -1815,42 +1815,61 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 }
 
 /* --- Halaman akun klien --- */
-.account-nav {
-  position: sticky;
-  top: 77px;
-  z-index: 15;
-  display: flex;
-  gap: 8px;
-  width: min(1120px, calc(100% - 32px));
-  margin: 18px auto 0;
-  padding: 6px;
-  background: white;
-  border: 1px solid #e7e5e4;
-  border-radius: 16px;
-}
-.account-nav a {
-  flex: 1;
+.account-shell {
   display: grid;
-  place-items: center;
-  min-height: 42px;
-  padding: 8px 10px;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+}
+.account-side {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 28px 16px 22px;
+  background: white;
+  border-right: 1px solid rgba(38, 62, 49, 0.18);
+}
+.account-side .brand { justify-content: center; }
+.account-side .brand img { height: 72px; }
+.account-side nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 32px;
+}
+.account-side nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
   border-radius: 12px;
-  color: var(--body);
+  color: #424844;
   font-family: var(--label);
   font-size: 14px;
   font-weight: 600;
-  text-align: center;
   text-decoration: none;
 }
-.account-nav a[aria-current="page"] {
-  background: var(--forest);
+.account-side nav a[aria-current="page"] {
+  background: #10281c;
   color: white;
 }
+.account-home {
+  margin-top: auto;
+  padding: 12px 14px;
+  color: #7e5713;
+  font-family: var(--label);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
 .account-main {
-  width: min(1120px, calc(100% - 32px));
-  margin: 22px auto 72px;
+  min-width: 0;
+  margin: 0;
+  padding: 36px 40px 72px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  align-content: start;
 }
 .account-intro h1 {
   color: var(--title);
@@ -2106,7 +2125,144 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
   font-size: 14px;
   font-weight: 400;
 }
+.account-settings {
+  display: grid;
+  gap: 28px;
+  width: min(720px, 100%);
+  margin-top: 8px;
+  padding: 40px 44px 36px;
+  background: white;
+  border: 1px solid rgba(38, 62, 49, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+.account-settings label { gap: 10px; font-size: 14px; }
+.account-settings input {
+  min-height: 52px;
+  padding: 14px 16px;
+}
 .account-settings input[readonly] { color: var(--muted); }
+.account-settings .account-actions { margin-top: 4px; gap: 14px; }
+.session-card {
+  display: grid;
+  gap: 20px;
+  padding: 25px;
+  background: white;
+  border: 1px solid rgba(38, 62, 49, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+.session-card h2 {
+  margin: 0;
+  padding-bottom: 17px;
+  border-bottom: 1px solid rgba(16, 40, 28, 0.1);
+  color: #10281c;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 30px;
+}
+.session-facts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+.session-facts p {
+  color: #727973;
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.55px;
+  line-height: 20px;
+  text-transform: uppercase;
+}
+.session-facts .is-deadline p {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #7e5713;
+}
+.session-facts .is-deadline img {
+  width: 10.8333px;
+  height: 10.8333px;
+  max-width: none;
+}
+.session-facts strong,
+.session-facts a {
+  display: block;
+  margin-top: 2px;
+  color: #10281c;
+  font-family: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.13px;
+  line-height: 20px;
+  text-decoration: none;
+}
+.session-facts span {
+  display: block;
+  margin-top: 2px;
+  color: #424844;
+  font-size: 13px;
+  letter-spacing: 0.13px;
+  line-height: 20px;
+}
+.session-facts em {
+  display: block;
+  color: #7e5713;
+  font-family: var(--label);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.13px;
+  line-height: 20px;
+}
+.session-steps {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  list-style: none;
+  background: rgba(246, 243, 238, 0.7);
+  border-radius: 12px;
+}
+.session-steps li {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 6px;
+  background: #f0ede9;
+  color: #424844;
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16.5px;
+  text-align: center;
+}
+.session-steps li.is-done {
+  background: #10281c;
+  color: white;
+  font-weight: 600;
+}
+.session-steps li.is-current {
+  background: #404f3f;
+  color: white;
+  font-weight: 700;
+}
+.session-actions { display: flex; justify-content: flex-end; }
+.session-update {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 16px;
+  background: #10281c;
+  color: white;
+  font-family: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.13px;
+  line-height: 20px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+.session-update:hover { background: #1c3a2c; }
 .account-review { display: grid; gap: 18px; }
 .account-review fieldset {
   margin: 0;
@@ -2148,14 +2304,32 @@ input.invalid, select.invalid, textarea.invalid { box-shadow: 0 0 0 1.5px #e3aaa
 }
 .account-top img { width: 22px; height: 22px; transform: rotate(180deg); }
 @media (max-width: 900px) {
+  .account-shell { grid-template-columns: 1fr; }
+  .account-side {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(38, 62, 49, 0.18);
+  }
+  .account-side nav {
+    flex-direction: row;
+    overflow-x: auto;
+    margin-top: 16px;
+  }
+  .account-side nav a { flex: none; min-width: 132px; }
+  .account-home { margin-top: 12px; }
+  .account-main { padding: 22px 16px 56px; }
   .account-intro h1 { font-size: 28px; }
   .account-split,
   .account-switch div,
-  .account-progress ol { grid-template-columns: 1fr; }
-  .account-nav { overflow-x: auto; }
-  .account-nav a { flex: none; min-width: 132px; }
+  .account-progress ol,
+  .session-facts { grid-template-columns: 1fr; }
+  .session-steps { flex-direction: column; }
   .account-masonry { column-count: 2; }
   .account-facts div { grid-template-columns: 1fr; gap: 2px; }
+  .account-settings { padding: 28px 22px; }
 }
 @media (max-width: 640px) {
   .account-masonry { column-count: 1; }

@@ -114,76 +114,97 @@ function Progress({ booking, pickCount }) {
   );
 }
 
-function Dashboard({ session, booking, pickCount, dpAsked, onPay }) {
+const MILESTONES = ["1. Sesi Foto", "2. RAW Diunggah", "3. Kurasi Klien", "4. Retouching", "5. Final G-Drive"];
+
+function milestoneIndex(booking, pickCount) {
+  if (booking.phase === "done") return MILESTONES.length;
+  if (booking.phase === "photos") return pickCount > 0 ? 3 : 2;
+  return -1;
+}
+
+function deadlineCopy(booking) {
+  const start = new Date(`${booking.dateISO}T00:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((end.getTime() - today.getTime()) / 86400000);
+  const when = end.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  let remain = "Sudah selesai";
+  if (booking.phase !== "done") {
+    if (diff > 1) remain = `Sisa ${diff} Hari Lagi`;
+    else if (diff === 1) remain = "Sisa 1 Hari Lagi";
+    else if (diff === 0) remain = "Hari ini";
+    else remain = `Lewat ${Math.abs(diff)} Hari`;
+  }
+  return { when: `${when} (H+7)`, remain };
+}
+
+function Dashboard({ session, booking, bookings, pickCount, dpAsked, onPay, onChoose }) {
   const warning = warningFor(booking, dpAsked);
+  const current = milestoneIndex(booking, pickCount);
+  const deadline = deadlineCopy(booking);
+  const isEmail = session.identity.includes("@");
   const discuss = buildWhatsAppUrl(
     `Halo, saya ${session.name} ingin berdiskusi dengan fotografer ${booking.photographer} untuk booking ${booking.id} paket ${booking.packageName}.`,
   );
+  const sessionDate = new Date(`${booking.dateISO}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  function updateProgress() {
+    if (booking.phase === "dp") onPay();
+    else if (booking.phase === "photos") window.location.assign("/akun/foto");
+    else window.location.assign("/akun/ulasan");
+  }
+
   return (
     <>
       <header className="account-intro">
         <h1>Dashboard</h1>
-        <p>Halo, {session.name}. Ini ringkasan pemesanan dan fotografer yang akan menemanimu.</p>
       </header>
-      <p className={`account-alert is-${warning.tone}`} role="status">{warning.text}</p>
-      <Progress booking={booking} pickCount={pickCount} />
-      <div className="account-split">
-        <section className="account-card">
-          <h2>Data pemesanan</h2>
-          <dl className="account-facts">
-            <div>
-              <dt>Kode booking</dt>
-              <dd>{booking.id}</dd>
-            </div>
-            <div>
-              <dt>Paket</dt>
-              <dd>{booking.packageName}</dd>
-            </div>
-            <div>
-              <dt>Katalog</dt>
-              <dd>{booking.catalog}</dd>
-            </div>
-            <div>
-              <dt>Tanggal</dt>
-              <dd>{booking.dateLabel}</dd>
-            </div>
-            <div>
-              <dt>Jam</dt>
-              <dd>{booking.timeLabel}</dd>
-            </div>
-            <div>
-              <dt>Lokasi</dt>
-              <dd>{booking.location}</dd>
-            </div>
-            <div>
-              <dt>Batas edit</dt>
-              <dd>{booking.editedPhotos} edited photo + {booking.addons} add-on</dd>
-            </div>
-          </dl>
-        </section>
-        <div className="account-stack">
-          <section className="account-card">
-            <h2>Pembayaran DP</h2>
-            <p className="account-amount">{rupiah(booking.dp)}</p>
-            <p className="account-muted">
-              {booking.phase === "dp" ? "Belum dibayar" : "DP sudah dikonfirmasi"}
+      <BookingSwitch bookings={bookings} activeId={booking.id} onChange={onChoose} />
+      {booking.phase === "dp" ? <p className={`account-alert is-${warning.tone}`} role="status">{warning.text}</p> : null}
+      <article className="session-card">
+        <h2>{sessionDate} - {session.name}</h2>
+        <div className="session-facts">
+          <div>
+            <p>Paket sesi</p>
+            <strong>Paket {booking.packageName} ({editLimit(booking)} Foto)</strong>
+          </div>
+          <div>
+            <p>{isEmail ? "Email" : "WhatsApp"}</p>
+            <strong>{session.identity}</strong>
+          </div>
+          <div>
+            <p>Waktu & lokasi</p>
+            <span>{booking.timeLabel} • {booking.location}</span>
+          </div>
+          <div>
+            <p>Fotografer</p>
+            <a href={discuss} target="_blank" rel="noreferrer">{booking.photographer}</a>
+          </div>
+          <div className="is-deadline">
+            <p>
+              <img src="/assets/account/deadline.svg" alt="" width="10.8333" height="10.8333" />
+              Deadline selesai
             </p>
-            {booking.phase === "dp" ? (
-              <button className="btn btn-forest" type="button" onClick={onPay}>
-                {dpAsked ? "Kirim ulang permintaan DP" : "Bayar DP"}
-              </button>
-            ) : null}
-          </section>
-          <section className="account-card">
-            <h2>Fotografer</h2>
-            <p className="account-person">{booking.photographer}</p>
-            <p className="account-muted">Fotografer yang dijadwalkan untuk sesi ini.</p>
-            <a className="btn btn-line" href={discuss} target="_blank" rel="noreferrer">
-              Diskusi dengan {booking.photographer.split(" ")[0]}
-            </a>
-          </section>
+            <strong>{deadline.when}</strong>
+            <em>{deadline.remain}</em>
+          </div>
         </div>
-      </div>
+        <ol className="session-steps" aria-label="Milestone booking">
+          {MILESTONES.map((label, index) => {
+            const state = index < current ? "is-done" : index === current ? "is-current" : "";
+            return <li key={label} className={state}>{label}</li>;
+          })}
+        </ol>
+        <div className="session-actions">
+          <button className="session-update" type="button" onClick={updateProgress}>Update Progress</button>
+        </div>
+      </article>
     </>
   );
 }
@@ -432,7 +453,7 @@ function AccountSettings({ session, onSession }) {
         <h1>Kelola Akun</h1>
         <p>Perbarui nama yang tampil di halaman akunmu.</p>
       </header>
-      <form className="account-card account-settings" onSubmit={submit}>
+      <form className="account-settings" onSubmit={submit}>
         <label>
           Nama
           <input value={name} onChange={(event) => { setName(event.target.value); setSaved(false); }} />
@@ -518,22 +539,20 @@ export default function AccountApp() {
   }
 
   return (
-    <>
-      <header className="site-header">
-        <div className="header-inner">
-          <a className="brand" href="/" aria-label="Seraye Moments">
-            <img src={logoSrc} alt="Seraye Moments" />
-          </a>
-          <a className="header-back" href="/">Balik ke Halaman</a>
-        </div>
-      </header>
-      <nav className="account-nav" aria-label="Menu akun">
-        {nav.map(([href, label]) => (
-          <a key={href} href={href} aria-current={path === href ? "page" : undefined}>{label}</a>
-        ))}
-      </nav>
+    <div className="account-shell">
+      <aside className="account-side">
+        <a className="brand" href="/" aria-label="Seraye Moments">
+          <img src={logoSrc} alt="Seraye Moments" />
+        </a>
+        <nav aria-label="Menu akun">
+          {nav.map(([href, label]) => (
+            <a key={href} href={href} aria-current={path === href ? "page" : undefined}>{label}</a>
+          ))}
+        </nav>
+        <a className="account-home" href="/">Balik ke Halaman</a>
+      </aside>
       <main className="account-main">
-        {path === "/akun/kelola" ? null : (
+        {path === "/akun" || path === "/akun/kelola" ? null : (
           <BookingSwitch bookings={clientBookings} activeId={booking.id} onChange={chooseBooking} />
         )}
         {path === "/akun/foto" ? (
@@ -546,12 +565,14 @@ export default function AccountApp() {
           <Dashboard
             session={session}
             booking={booking}
+            bookings={clientBookings}
             pickCount={pickCount}
             dpAsked={Boolean(dpAsked[booking.id])}
             onPay={payDp}
+            onChoose={chooseBooking}
           />
         )}
       </main>
-    </>
+    </div>
   );
 }
