@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { displayName, writeSession } from "./session";
 
 // Halaman akun klien. Backend akun belum ada.
 // Konfirmasi admin untuk ganti kata sandi disimpan untuk development berikutnya:
@@ -82,7 +83,6 @@ export function LoginApp() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  const [note, setNote] = useState("");
 
   const identityOk = validEmail(identity) || validWhatsApp(identity);
   const passwordOk = password.length >= 8;
@@ -90,7 +90,10 @@ export function LoginApp() {
   function submit(event) {
     event.preventDefault();
     setAttempted(true);
-    setNote(identityOk && passwordOk ? PENDING_NOTE : "");
+    if (!identityOk || !passwordOk) return;
+    const value = identity.trim();
+    writeSession({ identity: value, name: displayName(value), remember });
+    window.location.assign("/akun");
   }
 
   return (
@@ -141,7 +144,6 @@ export function LoginApp() {
           Masuk ke Akun
           <Asset name="arrow" width="12" height="12" />
         </button>
-        {note ? <p className="auth-note" role="status">{note}</p> : null}
       </form>
     </AuthShell>
   );

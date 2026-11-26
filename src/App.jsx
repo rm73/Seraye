@@ -14,6 +14,7 @@ import { faqGroups, MUA_DP, newsPosts, packages, PHOTO_ADDON, STANDARD_DP, terms
 import { prewisudaPortfolio, wisudaPortfolio } from "./portfolio";
 import { addMinutes, normalizeTime, packageMinutes, slotStatus } from "./schedule";
 import { SERAYE_WHATSAPP } from "./config";
+import { readSession } from "./session";
 
 const defaultPackageId = "sekejap";
 const logoSrc = "/assets/logo%20seraye%20moments%20-%20Gold%20(1).png";
@@ -259,6 +260,7 @@ function NewsRail({ posts, onOpen }) {
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [clientSession] = useState(() => readSession());
   const [packageId, setPackageId] = useState(defaultPackageId);
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -641,12 +643,12 @@ export default function App() {
               Katalog
             </button>
             <a href="/feedback">Penilaian</a>
-            <a className="btn btn-account" href="/masuk">
+            <a className="btn btn-account" href={clientSession ? "/akun" : "/masuk"}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="8" r="3.6" />
                 <path d="M4.5 20c.9-3.8 3.9-5.6 7.5-5.6s6.6 1.8 7.5 5.6" />
               </svg>
-              Masuk / Akun
+              {clientSession ? "Akun" : "Masuk / Akun"}
             </a>
             <button className="btn btn-forest" type="button" onClick={() => closeMenuAndGo("booking")}>
               Booking
