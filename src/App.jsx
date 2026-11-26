@@ -10,7 +10,7 @@ import {
   todayStamp,
 } from "./booking";
 import { createClientBooking, loadAvailability } from "./api";
-import { faqGroups, MUA_DP, newsPosts, packages, PHOTO_ADDON, STANDARD_DP, terms } from "./data";
+import { faqGroups, MUA_DP, packages, PHOTO_ADDON, STANDARD_DP, terms } from "./data";
 import { prewisudaPortfolio, wisudaPortfolio } from "./portfolio";
 import { addMinutes, normalizeTime, packageMinutes, slotStatus } from "./schedule";
 import { SERAYE_WHATSAPP } from "./config";
@@ -53,11 +53,6 @@ function PackageCard({ item, active, onSelect, onBook, quiet = false, priceLabel
         <h3>{item.name}</h3>
         {priceLabel ? (
           <p className="price">{priceLabel}</p>
-        ) : item.specialOffer ? (
-          <>
-            <p className="price-lead">Hanya dengan</p>
-            <p className="price">{rupiah(item.price)}</p>
-          </>
         ) : (
           <p className="price">
             {rupiah(item.price)}
@@ -161,7 +156,7 @@ function Hero({ onPortfolio, onPricelist }) {
           <p className="hero-cta"><strong>Karena setiap momen patut dirayakan</strong></p>
           <div className="hero-actions">
             <button className="btn btn-forest" type="button" onClick={onPortfolio}>
-              Lihat katalog
+              Cek Portofolio
             </button>
             <button className="btn btn-pricelist" type="button" onClick={onPricelist}>
               Cek pricelist
@@ -208,7 +203,6 @@ export default function App() {
   const [showTop, setShowTop] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [lightbox, setLightbox] = useState(null);
-  const [newsOpen, setNewsOpen] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
@@ -354,20 +348,6 @@ export default function App() {
       frame?.removeEventListener("wheel", onWheel);
     };
   }, [lightbox]);
-
-  useEffect(() => {
-    if (!newsOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKey(event) {
-      if (event.key === "Escape") setNewsOpen(null);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [newsOpen]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -572,13 +552,6 @@ export default function App() {
               Katalog
             </button>
             <a href="/feedback">Penilaian</a>
-            <a className="btn btn-account" href="/masuk">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="8" r="3.6" />
-                <path d="M4.5 20c.9-3.8 3.9-5.6 7.5-5.6s6.6 1.8 7.5 5.6" />
-              </svg>
-              Masuk / Akun
-            </a>
             <button className="btn btn-forest" type="button" onClick={() => closeMenuAndGo("booking")}>
               Booking
             </button>
@@ -955,7 +928,7 @@ export default function App() {
             { title: "Katalog Wisuda", photos: wisudaPortfolio, open: true },
             { title: "Katalog Pre-wisuda", photos: prewisudaPortfolio, open: false },
           ].map((group) => (
-            <details key={group.title} className="folio-drop" open={group.open || undefined}>
+            <details key={group.title} className="folio-drop" defaultOpen={group.open}>
               <summary>
                 {group.title}
                 <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
@@ -992,26 +965,6 @@ export default function App() {
               promosi kami.
             </p>
             <p>Dengan membayar DP, klien dianggap telah membaca dan menyetujui S&K lengkap kami.</p>
-          </div>
-          <div className="news" id="berita">
-            <div className="news-head">
-              <div>
-                <h2>Berita &amp; Tips Wisuda</h2>
-                <p>Inspirasi pose, panduan persiapan, dan cerita di balik layar sesi wisuda.</p>
-              </div>
-              {newsPosts.length > 3 ? <span className="news-more">Selengkapnya →</span> : null}
-            </div>
-            <div className="news-grid">
-              {newsPosts.slice(0, 3).map((post) => (
-                <article key={post.id} className="news-card">
-                  <button type="button" onClick={() => setNewsOpen(post)}>
-                    <img src={post.image} alt="" loading="lazy" decoding="async" />
-                    <h3>{post.title}</h3>
-                    <span className="news-read">Baca artikel →</span>
-                  </button>
-                </article>
-              ))}
-            </div>
           </div>
           <div className="faq-head">
             <h2>Pertanyaan yang Sering Diajukan</h2>
@@ -1056,34 +1009,6 @@ export default function App() {
           </div>
         </section>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div className="footer-brand">
-            <strong>Sèraye Moments</strong>
-            <span>Abadikan Momen Berhargamu</span>
-          </div>
-          <p>© {new Date().getFullYear()} Seraye Moments. Seluruh hak cipta dilindungi. Bandung, Indonesia.</p>
-        </div>
-      </footer>
-
-      {newsOpen ? (
-        <div className="popup" role="dialog" aria-modal="true" aria-label={newsOpen.title} onClick={() => setNewsOpen(null)}>
-          <div className="popup-card news-popup" onClick={(event) => event.stopPropagation()}>
-            <button className="popup-close news-close" type="button" aria-label="Tutup" onClick={() => setNewsOpen(null)}>
-              ×
-            </button>
-            <figure>
-              <img src={newsOpen.image} alt={newsOpen.caption} />
-              <figcaption>{newsOpen.caption}</figcaption>
-            </figure>
-            <h2>{newsOpen.title}</h2>
-            {newsOpen.paragraphs.map((text) => (
-              <p key={text}>{text}</p>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       {muaPrompt && sempurna ? (
         <div className="popup" role="dialog" aria-modal="true" aria-label="Tambah Paket MUA">
