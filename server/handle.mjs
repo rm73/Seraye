@@ -81,33 +81,42 @@ function readBody(req) {
   });
 }
 
-function signToken() {
+function signToken(extra = {}) {
   const payload = Buffer.from(
-    JSON.stringify({ role: "admin", exp: Date.now() + TOKEN_TTL_MS, nonce: randomBytes(8).toString("hex") }),
+    JSON.stringify({ role: "admin", ...extra, exp: Date.now() + TOKEN_TTL_MS, nonce: randomBytes(8).toString("hex") }),
   ).toString("base64url");
   const signature = createHmac("sha256", tokenSecret()).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 }
 
-function tokenIsValid(token) {
-  if (!token || !token.includes(".")) return false;
+function readToken(req) {
+  const header = req.headers.authorization || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1] || "";
+  if (!token || !token.includes(".")) return null;
   const [payload, signature] = token.split(".");
   const expected = createHmac("sha256", tokenSecret()).update(payload).digest("base64url");
   const left = Buffer.from(signature);
   const right = Buffer.from(expected);
-  if (left.length !== right.length || !timingSafeEqual(left, right)) return false;
+  if (left.length !== right.length || !timingSafeEqual(left, right)) return null;
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return data.role === "admin" && data.exp > Date.now();
+    if (!data?.exp || data.exp <= Date.now()) return null;
+    return data;
   } catch {
-    return false;
+    return null;
   }
 }
 
 function isAdmin(req) {
-  const header = req.headers.authorization || "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  return tokenIsValid(match?.[1] || "");
+  return readToken(req)?.role === "admin";
+}
+
+function phoneKey(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("62")) return digits;
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  return digits ? `62${digits}` : "";
 }
 
 function cleanText(value, max) {
@@ -537,6 +546,100 @@ async function handleFeedback(req, res) {
   return send(res, 200, { feedback: entry, feedbackList: next.feedback });
 }
 
+function cleanAccount(item) {
+  const role = ["client", "photographer", "admin"].includes(item?.role) ? item.role : "client";
+  return {
+    id: cleanText(item?.id, 40),
+    name: cleanText(item?.name, 80),
+    role,
+    phone: cleanText(item?.phone, 20),
+    password: cleanText(item?.password, 80),
+    lastLoginAt: cleanText(item?.lastLoginAt, 40),
+    online: false,
+    locked: Boolean(item?.locked),
+    photographerId: cleanText(item?.photographerId, 8).toUpperCase(),
+  };
+}
+
+async function handleAdminAccounts(req, res) {
+  if (!isAdmin(req)) return send(res, 401, { message: "Sesi admin berakhir. Masuk lagi." });
+  if (req.method !== "PUT") return send(res, 405, { message: "Metode tidak didukung." });
+  const body = await readBody(req);
+  if (!Array.isArray(body.accounts)) return send(res, 400, { message: "Daftar akun tidak valid." });
+  const accounts = body.accounts.map(cleanAccount).filter((item) => item.id && item.name && item.phone);
+  const next = await updateState((state) => ({ ...state, accounts }));
+  return send(res, 200, { accounts: next.accounts });
+}
+
+async function handleStaffLogin(req, res) {
+  if (req.method !== "POST") return send(res, 405, { message: "Metode tidak didukung." });
+  const body = await readBody(req);
+  const phone = phoneKey(body.phone);
+  const password = cleanText(body.password, 80);
+  const state = await readState();
+  const account = (state.accounts || []).find((item) => phoneKey(item.phone) === phone);
+  if (!account) return send(res, 404, { message: "Akun tidak ditemukan." });
+  if (account.password !== password) return send(res, 401, { message: "Kata sandi tidak sesuai." });
+  if (account.role === "admin") {
+    return send(res, 403, { message: "Akun pengelola masuk lewat halaman admin." });
+  }
+  const now = new Date().toISOString();
+  await updateState((current) => ({
+    ...current,
+    accounts: (current.accounts || []).map((item) => (
+      item.id === account.id ? { ...item, lastLoginAt: now } : item
+    )),
+  }));
+  if (account.role === "photographer") {
+    return send(res, 200, {
+      role: "photographer",
+      name: account.name,
+      photographerId: account.photographerId,
+      token: signToken({ role: "photographer", photographerId: account.photographerId, accountId: account.id }),
+    });
+  }
+  return send(res, 200, { role: "client", name: account.name });
+}
+
+async function handlePhotographerSchedule(req, res) {
+  const token = readToken(req);
+  if (token?.role !== "photographer") return send(res, 401, { message: "Sesi fotografer berakhir. Masuk lagi." });
+  if (req.method !== "GET") return send(res, 405, { message: "Metode tidak didukung." });
+  const state = await readState();
+  return send(res, 200, {
+    photographerId: token.photographerId,
+    photographers: state.photographers,
+    bookings: state.bookings,
+    blocks: state.blocks,
+    progress: state.progress || {},
+  });
+}
+
+async function handleProgress(req, res) {
+  if (req.method !== "POST") return send(res, 405, { message: "Metode tidak didukung." });
+  const token = readToken(req);
+  if (!token || (token.role !== "admin" && token.role !== "photographer")) {
+    return send(res, 401, { message: "Sesi berakhir. Masuk lagi." });
+  }
+  const body = await readBody(req);
+  const id = cleanText(body.id, 40);
+  const stage = Number(body.stage);
+  if (!id || stage < 1 || stage > 5) return send(res, 400, { message: "Tahap tidak dikenali." });
+  if (token.role === "photographer" && ![1, 2, 4, 5].includes(stage)) {
+    return send(res, 403, { message: "Kurasi klien ditandai dari pilihan klien, bukan dari akun fotografer." });
+  }
+  const next = await updateState((state) => {
+    if (token.role === "photographer") {
+      const booking = state.bookings.find((item) => item.id === id);
+      if (!booking || booking.photographer !== token.photographerId) {
+        throw Object.assign(new Error("Pesanan ini bukan penugasanmu."), { status: 403 });
+      }
+    }
+    return { ...state, progress: { ...(state.progress || {}), [id]: stage } };
+  });
+  return send(res, 200, { progress: next.progress });
+}
+
 const routes = {
   "/api/auth": handleAuth,
   "/api/availability": handleAvailability,
@@ -547,6 +650,10 @@ const routes = {
   "/api/admin/blocks": handleAdminBlocks,
   "/api/admin/photographers": handleAdminPhotographers,
   "/api/admin/mocks": handleAdminMocks,
+  "/api/admin/accounts": handleAdminAccounts,
+  "/api/staff/login": handleStaffLogin,
+  "/api/photographer/schedule": handlePhotographerSchedule,
+  "/api/progress": handleProgress,
 };
 
 export async function handleApi(req, res, forcedPath) {

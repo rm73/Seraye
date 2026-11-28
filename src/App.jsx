@@ -10,8 +10,8 @@ import {
   todayStamp,
 } from "./booking";
 import { createClientBooking, loadAvailability } from "./api";
-import { faqGroups, MUA_DP, newsPosts, packages, PHOTO_ADDON, STANDARD_DP, terms } from "./data";
-import { prewisudaPortfolio, wisudaPortfolio } from "./portfolio";
+import { MUA_DP, packages as sourcePackages, PHOTO_ADDON, STANDARD_DP, terms } from "./data";
+import { readCatalog, readCatalogPackages, readFaq, readNews, readPortfolio } from "./admin/store";
 import { addMinutes, normalizeTime, packageMinutes, slotStatus } from "./schedule";
 import { SERAYE_WHATSAPP } from "./config";
 import { readSession } from "./session";
@@ -292,10 +292,21 @@ export default function App() {
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
 
-  const selected = packages.find((item) => item.id === packageId) ?? packages[1];
+  const packages = useMemo(() => {
+    const live = readCatalogPackages();
+    return live.length ? live : sourcePackages;
+  }, []);
+  const catalogBoards = useMemo(() => readCatalog().filter((category) => category.packages.some((item) => item.active !== false)), []);
+  const faqGroups = useMemo(() => readFaq(), []);
+  const newsPosts = useMemo(() => readNews().map((item) => ({
+    ...item,
+    paragraphs: String(item.description || item.excerpt || "").split(/\n+/).filter(Boolean),
+    caption: item.excerpt || "",
+  })), []);
+  const portfolioBoards = useMemo(() => readPortfolio().filter((board) => board.photos.length), []);
+  const selected = packages.find((item) => item.id === packageId) ?? packages[1] ?? packages[0];
   const earliestDate = shiftStamp(todayStamp(), 3);
   const photoPackages = packages.filter((item) => item.group === "photography");
-  const videoPackages = packages.filter((item) => item.group === "videography");
   const sempurna = photoPackages.find((item) => item.id === "sempurna");
   const needsMuaFields = Boolean(selected.includesMua);
   const photoFee = extraPhotos * PHOTO_ADDON;
@@ -663,45 +674,27 @@ export default function App() {
           onPricelist={() => scrollToId("paket")}
         />
         <section className="catalog" id="paket">
-          <div className="catalog-block">
-            <div className="catalog-title">
-              <h2>Katalog Semarak</h2>
+          {catalogBoards.map((category) => (
+            <div className="catalog-block" key={category.id}>
+              <div className="catalog-title">
+                <h2>{category.name}</h2>
+              </div>
+              <div className={category.kind === "videography" ? "catalog-grid video" : "catalog-grid photo"}>
+                {category.packages.filter((item) => item.active !== false).map((item) => (
+                  <PackageCard
+                    key={item.id}
+                    item={item}
+                    active={item.id === selected.id}
+                    onSelect={() => choosePackage(item.id)}
+                    onBook={() => {
+                      choosePackage(item.id);
+                      scrollToId("booking");
+                    }}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="catalog-grid photo">
-              {photoPackages.map((item) => (
-                <PackageCard
-                  key={item.id}
-                  item={item}
-                  active={item.id === selected.id}
-                  onSelect={() => choosePackage(item.id)}
-                  onBook={() => {
-                    choosePackage(item.id);
-                    scrollToId("booking");
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="catalog-block">
-            <div className="catalog-title">
-              <h2>Katalog Selangkah</h2>
-            </div>
-            <div className="catalog-grid video">
-              {videoPackages.map((item) => (
-                <PackageCard
-                  key={item.id}
-                  item={item}
-                  active={item.id === selected.id}
-                  onSelect={() => choosePackage(item.id)}
-                  onBook={() => {
-                    choosePackage(item.id);
-                    scrollToId("booking");
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          ))}
         </section>
 
         <section className="booking" id="booking">
@@ -749,20 +742,15 @@ export default function App() {
                   value={selected.id}
                   onChange={(event) => choosePackage(event.target.value)}
                 >
-                  <optgroup label="Katalog Semarak">
-                    {photoPackages.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} ({rupiah(item.price)})
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Katalog Selangkah">
-                    {videoPackages.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} ({rupiah(item.price)})
-                      </option>
-                    ))}
-                  </optgroup>
+                  {catalogBoards.map((category) => (
+                    <optgroup key={category.id} label={category.name}>
+                      {category.packages.filter((item) => item.active !== false).map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} ({rupiah(item.price)})
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </label>
               <div className="explain">
@@ -1024,11 +1012,8 @@ export default function App() {
           <div className="section-head">
             <h2>Portofolio</h2>
           </div>
-          {[
-            { title: "Katalog Wisuda", photos: wisudaPortfolio, open: true },
-            { title: "Katalog Pre-wisuda", photos: prewisudaPortfolio, open: false },
-          ].map((group) => (
-            <details key={group.title} className="folio-drop" open={group.open || undefined}>
+          {portfolioBoards.map((group, index) => (
+            <details key={group.id} className="folio-drop" open={index === 0 || undefined}>
               <summary>
                 {group.title}
                 <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />

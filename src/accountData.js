@@ -74,10 +74,44 @@ export const clientBookings = [
     addons: 1,
     dp: STANDARD_DP,
     phase: "done",
-    photos: [],
+    finalDriveISO: "2026-11-16",
+    photos: drivePhotos,
+    driveUrl: DRIVE_FOLDER_URL,
   },
 ];
 
+export const HISTORY_DAYS = 21;
+
 export function editLimit(booking) {
   return booking.editedPhotos + booking.addons;
+}
+
+export function historyDeadline(booking) {
+  if (!booking.finalDriveISO) return null;
+  const end = new Date(`${booking.finalDriveISO}T00:00:00`);
+  end.setDate(end.getDate() + HISTORY_DAYS);
+  return end;
+}
+
+export function historyOpen(booking, today = new Date()) {
+  const end = historyDeadline(booking);
+  if (!end) return true;
+  const day = new Date(today);
+  day.setHours(0, 0, 0, 0);
+  return day.getTime() <= end.getTime();
+}
+
+export function downloadWindow(booking, today = new Date()) {
+  const end = historyDeadline(booking);
+  if (!end || booking.phase !== "done") return null;
+  const day = new Date(today);
+  day.setHours(0, 0, 0, 0);
+  const diff = Math.round((end.getTime() - day.getTime()) / 86400000);
+  const when = end.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const remain = diff > 1 ? `Sisa ${diff} hari.` : diff === 1 ? "Sisa 1 hari." : "Hari ini terakhir.";
+  return {
+    when,
+    diff,
+    text: `Hasil Final G-Drive bisa diunduh sampai ${when}. ${remain} Setelah tanggal itu, riwayat pembelian ini tidak bisa diakses lagi.`,
+  };
 }

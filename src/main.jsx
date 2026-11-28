@@ -4,6 +4,7 @@ import AdminApp from "./AdminApp.jsx";
 import App from "./App.jsx";
 import { LoginApp, RegisterApp, ResetPasswordApp } from "./AuthApp.jsx";
 import AccountApp from "./AccountApp.jsx";
+import PhotographerApp from "./PhotographerApp.jsx";
 import FeedbackApp from "./FeedbackApp.jsx";
 import "./styles.css";
 
@@ -12,6 +13,7 @@ const pages = {
   "/admin": AdminApp,
   "/feedback": FeedbackApp,
   "/masuk": LoginApp,
+  "/fotografer": PhotographerApp,
   "/daftar": RegisterApp,
   "/ganti-sandi": ResetPasswordApp,
 };

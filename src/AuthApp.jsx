@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { displayName, writeSession } from "./session";
+import { loginStaff, setPhotoToken } from "./api";
+import { findAccount } from "./admin/store";
+import { displayName, formatPhone, isPhone, writeSession } from "./session";
 
 // Halaman akun klien. Backend akun belum ada.
 // Konfirmasi admin untuk ganti kata sandi disimpan untuk development berikutnya:
@@ -68,39 +70,66 @@ function AuthShell({ title, lead, titleClass, children, footer }) {
   );
 }
 
-function normalizeWhatsApp(value) {
-  const digits = String(value).replace(/\D/g, "");
-  if (digits.startsWith("62")) return digits;
-  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
-  return `62${digits}`;
-}
-
-const validWhatsApp = (value) => /^628\d{8,12}$/.test(normalizeWhatsApp(value));
-const validEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-
 export function LoginApp() {
-  const [identity, setIdentity] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const identityOk = validEmail(identity) || validWhatsApp(identity);
+  const phoneOk = isPhone(phone);
   const passwordOk = password.length >= 8;
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     setAttempted(true);
-    if (!identityOk || !passwordOk) return;
-    const value = identity.trim();
-    writeSession({ identity: value, name: displayName(value), remember });
-    window.location.assign("/akun");
+    setError("");
+    if (!phoneOk || !passwordOk) return;
+    setBusy(true);
+    try {
+      const result = await loginStaff({ phone, password });
+      if (result.role === "photographer") {
+        setPhotoToken(result.token);
+        writeSession({
+          identity: formatPhone(phone),
+          name: result.name,
+          remember,
+          role: "photographer",
+          photographerId: result.photographerId,
+        });
+        window.location.assign("/fotografer");
+        return;
+      }
+      writeSession({ identity: formatPhone(phone), name: result.name || displayName(), remember, role: "client" });
+      window.location.assign("/akun");
+    } catch (reason) {
+      const local = findAccount(phone);
+      if (reason.status === 404 && local?.role === "photographer") {
+        setError("Akun fotografer belum aktif di server. Buka portal admin sekali, lalu masuk lagi.");
+        setBusy(false);
+        return;
+      }
+      if (reason.status === 404 && local?.role === "client" && local.password === password) {
+        writeSession({ identity: formatPhone(phone), name: local.name, remember, role: "client" });
+        window.location.assign("/akun");
+        return;
+      }
+      if (reason.status === 404 && !local) {
+        writeSession({ identity: formatPhone(phone), name: displayName(), remember, role: "client" });
+        window.location.assign("/akun");
+        return;
+      }
+      setError(reason.message);
+      setBusy(false);
+    }
   }
 
   return (
     <AuthShell
       title="Masuk Klien"
       titleClass="is-login"
-      lead="Masukkan nomor WhatsApp atau email dan kata sandi Anda untuk mengakses galeri foto."
+      lead="Masukkan nomor WhatsApp dan kata sandi. Klien membuka galeri. Fotografer membuka jadwal, dan akunnya hanya dibuat oleh admin."
       footer={
         <>
           Belum punya akun? <a href="/daftar">Daftar di sini <Asset name="arrow-gold" width="9.33333" height="9.33333" /></a>
@@ -109,20 +138,21 @@ export function LoginApp() {
     >
       <form className="auth-form" onSubmit={submit} noValidate>
         <div className="auth-field">
-          <label htmlFor="auth-identity">
-            Nomor WhatsApp atau Email <span className="is-alert" aria-hidden="true">*</span>
+          <label htmlFor="auth-phone">
+            Nomor WhatsApp <span className="is-alert" aria-hidden="true">*</span>
           </label>
-          <div className={attempted && !identityOk ? "auth-input is-invalid" : "auth-input"}>
+          <div className={attempted && !phoneOk ? "auth-input is-invalid" : "auth-input"}>
             <Asset name="user" width="16.6667" height="16.6667" />
             <input
-              id="auth-identity"
-              value={identity}
-              onChange={(event) => setIdentity(event.target.value)}
-              placeholder="Contoh: 081234567890 atau anda@email.com"
-              autoComplete="username"
+              id="auth-phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="Contoh: 081234567890"
+              autoComplete="tel"
+              inputMode="tel"
             />
           </div>
-          {attempted && !identityOk ? <p className="auth-error">Masukkan nomor WhatsApp aktif atau email yang valid.</p> : null}
+          {attempted && !phoneOk ? <p className="auth-error">Masukkan nomor WhatsApp yang aktif.</p> : null}
         </div>
         <PasswordField
           id="auth-password"
@@ -136,12 +166,13 @@ export function LoginApp() {
           aside={<a className="auth-forgot" href="/ganti-sandi">Lupa kata sandi?</a>}
         />
         {attempted && !passwordOk ? <p className="auth-error">Kata sandi minimal 8 karakter.</p> : null}
+        {error ? <p className="auth-error">{error}</p> : null}
         <label className="auth-check">
           <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
           Ingat saya di perangkat ini
         </label>
-        <button className="auth-submit" type="submit">
-          Masuk ke Akun
+        <button className="auth-submit" type="submit" disabled={busy}>
+          {busy ? "Memeriksa…" : "Masuk ke Akun"}
           <Asset name="arrow" width="12" height="12" />
         </button>
       </form>

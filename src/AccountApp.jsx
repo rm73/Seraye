@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { submitFeedback } from "./api";
 import { buildWhatsAppUrl, rupiah } from "./booking";
-import { clientBookings, drivePhotoSrc, editLimit } from "./accountData";
+import { clientBookings, downloadWindow, drivePhotoSrc, editLimit, historyOpen } from "./accountData";
 import { clearSession, displayName, readSession, writeSession } from "./session";
 
 const logoSrc = "/assets/logo%20seraye%20moments%20-%20Gold%20(1).png";
@@ -144,7 +144,7 @@ function Dashboard({ session, booking, bookings, pickCount, dpAsked, onPay, onCh
   const warning = warningFor(booking, dpAsked);
   const current = milestoneIndex(booking, pickCount);
   const deadline = deadlineCopy(booking);
-  const isEmail = session.identity.includes("@");
+  const download = downloadWindow(booking);
   const discuss = buildWhatsAppUrl(
     `Halo, saya ${session.name} ingin berdiskusi dengan fotografer ${booking.photographer} untuk booking ${booking.id} paket ${booking.packageName}.`,
   );
@@ -167,6 +167,7 @@ function Dashboard({ session, booking, bookings, pickCount, dpAsked, onPay, onCh
       </header>
       <BookingSwitch bookings={bookings} activeId={booking.id} onChange={onChoose} />
       {booking.phase === "dp" ? <p className={`account-alert is-${warning.tone}`} role="status">{warning.text}</p> : null}
+      {download ? <p className="account-alert is-wait" role="status">{download.text}</p> : null}
       <article className="session-card">
         <h2>{sessionDate} - {session.name}</h2>
         <div className="session-facts">
@@ -175,7 +176,7 @@ function Dashboard({ session, booking, bookings, pickCount, dpAsked, onPay, onCh
             <strong>Paket {booking.packageName} ({editLimit(booking)} Foto)</strong>
           </div>
           <div>
-            <p>{isEmail ? "Email" : "WhatsApp"}</p>
+            <p>WhatsApp</p>
             <strong>{session.identity}</strong>
           </div>
           <div>
@@ -205,59 +206,35 @@ function Dashboard({ session, booking, bookings, pickCount, dpAsked, onPay, onCh
           <button className="session-update" type="button" onClick={updateProgress}>Update Progress</button>
         </div>
       </article>
+      <section className="account-card purchase-history">
+        <h2>Riwayat pembelian</h2>
+        <p className="account-muted">Riwayat yang sudah sampai Final G-Drive tetap bisa dibuka selama 3 minggu untuk mengunduh hasilnya.</p>
+        <ul>
+          {bookings.map((item) => {
+            const windowInfo = downloadWindow(item);
+            return (
+              <li key={item.id}>
+                <button type="button" className={item.id === booking.id ? "is-active" : ""} onClick={() => onChoose(item.id)}>
+                  <strong>{item.packageName}</strong>
+                  <span>{item.dateLabel}</span>
+                </button>
+                {windowInfo ? <p>{windowInfo.text}{item.driveUrl ? <> <a href={item.driveUrl} target="_blank" rel="noreferrer">Unduh dari Drive</a></> : null}</p> : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </>
   );
 }
 
-function PhotoDialog({ photo, picked, note, atLimit, onClose, onToggle, onNote }) {
-  useEffect(() => {
-    function onKey(event) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
-
-  return (
-    <div className="account-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="account-dialog" role="dialog" aria-modal="true" aria-label={photo.name}>
-        <button className="popup-close" type="button" onClick={onClose} aria-label="Tutup">×</button>
-        <img
-          className={picked ? "is-picked" : ""}
-          src={drivePhotoSrc(photo.id, 1400)}
-          alt={photo.name}
-          referrerPolicy="no-referrer"
-        />
-        <label>
-          Catatan untuk fotografer
-          <textarea
-            value={note}
-            onChange={(event) => onNote(event.target.value)}
-            rows={3}
-            placeholder="Tulis catatan tentang foto yang ingin diproses"
-          />
-        </label>
-        {atLimit && !picked ? <p className="auth-error">Batas pilihan sudah penuh.</p> : null}
-        <button className={picked ? "btn btn-line" : "btn btn-forest"} type="button" onClick={onToggle} disabled={atLimit && !picked}>
-          {picked ? "Hapus pilihan" : "Pilih diedit"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function PhotoReview({ booking, picks, onToggle, onNote }) {
-  const [openId, setOpenId] = useState(null);
   const [drafts, setDrafts] = useState({});
+  const [noteId, setNoteId] = useState("");
   const [showTop, setShowTop] = useState(false);
   const limit = editLimit(booking);
   const pickCount = Object.keys(picks).length;
-  const open = booking.photos.find((photo) => photo.id === openId) || null;
+  const download = downloadWindow(booking);
 
   useEffect(() => {
     function onScroll() {
@@ -268,12 +245,22 @@ function PhotoReview({ booking, picks, onToggle, onNote }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  function noteFor(photoId) {
+    return picks[photoId] ?? drafts[photoId] ?? "";
+  }
+
+  function changeNote(photoId, value) {
+    if (picks[photoId] !== undefined) onNote(booking.id, photoId, value);
+    else setDrafts((current) => ({ ...current, [photoId]: value }));
+  }
+
   return (
     <>
       <header className="account-intro">
         <h1>Review Foto</h1>
-        <p>Lihat hasil dari fotografer, lalu pilih foto yang ingin diproses.</p>
+        <p>Centang foto yang ingin diproses. Catatan untuk fotografer boleh dikosongkan.</p>
       </header>
+      {download ? <p className="account-alert is-wait" role="status">{download.text}</p> : null}
       <Progress booking={booking} pickCount={pickCount} />
       <section className="account-card">
         <div className="account-review-head">
@@ -291,16 +278,48 @@ function PhotoReview({ booking, picks, onToggle, onNote }) {
             </p>
             <div className="account-masonry">
               {booking.photos.map((photo) => {
-                const picked = Boolean(picks[photo.id]);
+                const picked = picks[photo.id] !== undefined;
+                const atLimit = pickCount >= limit && !picked;
                 return (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    className={picked ? "is-picked" : ""}
-                    onClick={() => setOpenId(photo.id)}
-                  >
-                    <img src={drivePhotoSrc(photo.id, 800)} alt={photo.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
-                  </button>
+                  <article key={photo.id} className={picked ? "photo-tile is-picked" : "photo-tile"}>
+                    <div className="photo-frame">
+                      <img src={drivePhotoSrc(photo.id, 800)} alt={photo.name} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                      <span className="photo-shade" />
+                      {picked ? (
+                        <button
+                          className="photo-x"
+                          type="button"
+                          aria-label={`Hapus pilihan ${photo.name}`}
+                          onClick={() => onToggle(booking.id, photo.id, noteFor(photo.id))}
+                        >
+                          ×
+                        </button>
+                      ) : (
+                        <button
+                          className="photo-check"
+                          type="button"
+                          aria-label={`Pilih ${photo.name} untuk diedit`}
+                          disabled={atLimit}
+                          onClick={() => onToggle(booking.id, photo.id, noteFor(photo.id))}
+                        />
+                      )}
+                    </div>
+                    <button className="photo-note" type="button" onClick={() => setNoteId((current) => current === photo.id ? "" : photo.id)}>
+                      <img src="/assets/account/chat.svg" alt="" width="16" height="16" />
+                      Catatan
+                    </button>
+                    {noteId === photo.id ? (
+                      <label>
+                        Catatan untuk fotografer, opsional
+                        <textarea
+                          value={noteFor(photo.id)}
+                          onChange={(event) => changeNote(photo.id, event.target.value)}
+                          rows={3}
+                          placeholder="Kosongkan jika tidak ada pesan"
+                        />
+                      </label>
+                    ) : null}
+                  </article>
                 );
               })}
             </div>
@@ -309,23 +328,6 @@ function PhotoReview({ booking, picks, onToggle, onNote }) {
           <p className="account-muted">Fotografer belum mengunggah hasil foto untuk booking ini.</p>
         )}
       </section>
-      {open ? (
-        <PhotoDialog
-          photo={open}
-          picked={Boolean(picks[open.id])}
-          note={picks[open.id] ?? drafts[open.id] ?? ""}
-          atLimit={pickCount >= limit}
-          onClose={() => setOpenId(null)}
-          onNote={(value) => {
-            if (picks[open.id] !== undefined) onNote(booking.id, open.id, value);
-            else setDrafts((current) => ({ ...current, [open.id]: value }));
-          }}
-          onToggle={() => {
-            const note = picks[open.id] ?? drafts[open.id] ?? "";
-            onToggle(booking.id, open.id, note);
-          }}
-        />
-      ) : null}
       {showTop ? (
         <button className="account-top" type="button" aria-label="Kembali ke atas" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           <img src="/assets/arrow-down-svgrepo-com.svg" alt="" />
@@ -459,7 +461,7 @@ function AccountSettings({ session, onSession }) {
           <input value={name} onChange={(event) => { setName(event.target.value); setSaved(false); }} />
         </label>
         <label>
-          WhatsApp atau email
+          Nomor WhatsApp
           <input value={session.identity} readOnly />
         </label>
         {saved ? <p className="account-alert is-ready" role="status">Perubahan nama tersimpan.</p> : null}
@@ -491,12 +493,14 @@ export default function AccountApp() {
 
   useEffect(() => {
     if (!session) window.location.replace("/masuk");
+    else if (session.role === "photographer") window.location.replace("/fotografer");
   }, [session]);
 
   if (!session) return null;
 
-  const booking = clientBookings.find((item) => item.id === activeId) || clientBookings[0];
-  const bookingPicks = picks[booking.id] || {};
+  const bookings = clientBookings.filter((item) => historyOpen(item));
+  const booking = bookings.find((item) => item.id === activeId) || bookings[0];
+  const bookingPicks = booking ? picks[booking.id] || {} : {};
   const pickCount = Object.keys(bookingPicks).length;
 
   function chooseBooking(id) {
@@ -552,10 +556,12 @@ export default function AccountApp() {
         <a className="account-home" href="/">Balik ke Halaman</a>
       </aside>
       <main className="account-main">
-        {path === "/akun" || path === "/akun/kelola" ? null : (
-          <BookingSwitch bookings={clientBookings} activeId={booking.id} onChange={chooseBooking} />
+        {path === "/akun" || path === "/akun/kelola" || !booking ? null : (
+          <BookingSwitch bookings={bookings} activeId={booking.id} onChange={chooseBooking} />
         )}
-        {path === "/akun/foto" ? (
+        {!booking ? (
+          <p className="account-alert is-alert" role="status">Riwayat pembelian sudah lewat 3 minggu setelah Final G-Drive, jadi tidak bisa diakses lagi.</p>
+        ) : path === "/akun/foto" ? (
           <PhotoReview booking={booking} picks={bookingPicks} onToggle={togglePick} onNote={updateNote} />
         ) : path === "/akun/ulasan" ? (
           <ReviewPage booking={booking} />
@@ -565,7 +571,7 @@ export default function AccountApp() {
           <Dashboard
             session={session}
             booking={booking}
-            bookings={clientBookings}
+            bookings={bookings}
             pickCount={pickCount}
             dpAsked={Boolean(dpAsked[booking.id])}
             onPay={payDp}
@@ -573,6 +579,32 @@ export default function AccountApp() {
           />
         )}
       </main>
+      {booking ? <ChatBubbles session={session} booking={booking} /> : null}
+    </div>
+  );
+}
+
+function ChatBubbles({ session, booking }) {
+  const adminHref = buildWhatsAppUrl(
+    `Halo admin Seraye Moments, saya ${session.name} (${session.identity}) ingin bertanya tentang booking ${booking.id} paket ${booking.packageName}.`,
+  );
+  const photographerHref = buildWhatsAppUrl(
+    `Halo, saya ${session.name} (${session.identity}) ingin berdiskusi dengan fotografer ${booking.photographer} untuk booking ${booking.id} paket ${booking.packageName}.`,
+  );
+  return (
+    <div className="wa-bubbles">
+      <a className="is-photo" href={photographerHref} target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3zm4.8 12.6c-.2.6-1.2 1.1-1.7 1.1-.4 0-.9.2-3.1-.7-2.6-1-4.2-3.6-4.3-3.8-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .8 2.1.1.1 0 .3-.1.5l-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.6-.7c.2-.2.3-.2.6-.1.2.1 1.6.8 1.9.9.3.1.4.2.5.3.1.3 0 .8-.2 1.2z" />
+        </svg>
+        Fotografer
+      </a>
+      <a className="is-admin" href={adminHref} target="_blank" rel="noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3zm4.8 12.6c-.2.6-1.2 1.1-1.7 1.1-.4 0-.9.2-3.1-.7-2.6-1-4.2-3.6-4.3-3.8-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .8 2.1.1.1 0 .3-.1.5l-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.6-.7c.2-.2.3-.2.6-.1.2.1 1.6.8 1.9.9.3.1.4.2.5.3.1.3 0 .8-.2 1.2z" />
+        </svg>
+        Admin
+      </a>
     </div>
   );
 }

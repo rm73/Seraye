@@ -17,6 +17,8 @@ function normalizeState(parsed) {
     photographers: normalizePhotographers(parsed?.photographers),
     mocks: Array.isArray(parsed?.mocks) ? parsed.mocks : [],
     feedback: Array.isArray(parsed?.feedback) ? parsed.feedback : [],
+    accounts: Array.isArray(parsed?.accounts) ? parsed.accounts : [],
+    progress: parsed?.progress && typeof parsed.progress === "object" ? parsed.progress : {},
   };
 }
 

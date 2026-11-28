@@ -1,3 +1,4 @@
+import { readProgress, setStage } from "./admin/store";
 import { saveFeedback } from "./feedback";
 import * as localSchedule from "./localSchedule";
 
@@ -13,18 +14,22 @@ export function setAdminToken(token) {
   else sessionStorage.removeItem(TOKEN_KEY);
 }
 
-async function request(path, { method = "GET", body, auth = false } = {}) {
+async function request(path, { method = "GET", body, auth = false, token = "" } = {}) {
   const headers = {};
   if (body) headers["content-type"] = "application/json";
-  if (auth) headers.authorization = `Bearer ${adminToken()}`;
+  if (auth) headers.authorization = `Bearer ${token || adminToken()}`;
   const response = await fetch(path, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await response.json().catch(() => ({}));
-  if (response.status === 401 && auth) setAdminToken("");
-  if (!response.ok) throw new Error(data.message || "Permintaan gagal.");
+  if (response.status === 401 && auth && !token) setAdminToken("");
+  if (!response.ok) {
+    const error = new Error(data.message || "Permintaan gagal.");
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -70,7 +75,7 @@ export async function loadAdminSchedule() {
     return data;
   }
   localMode = true;
-  return { ...localSchedule.readState(), persistent: true };
+  return { ...localSchedule.readState(), progress: readProgress(), persistent: true };
 }
 
 async function localOrServer(localCall, serverCall) {
@@ -137,6 +142,42 @@ export function deleteAdminMock(id) {
   return localOrServer(
     () => localSchedule.deleteAdminMock(id),
     () => request(`/api/admin/mocks?id=${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
+  );
+}
+
+const PHOTO_KEY = "seraye-photo-token";
+
+export function photoToken() {
+  return sessionStorage.getItem(PHOTO_KEY) || "";
+}
+
+export function setPhotoToken(token) {
+  if (token) sessionStorage.setItem(PHOTO_KEY, token);
+  else sessionStorage.removeItem(PHOTO_KEY);
+}
+
+export function loginStaff(body) {
+  return request("/api/staff/login", { method: "POST", body });
+}
+
+export function saveServerAccounts(accounts) {
+  return request("/api/admin/accounts", { method: "PUT", body: { accounts }, auth: true });
+}
+
+export function loadPhotographerSchedule() {
+  return request("/api/photographer/schedule", { auth: true, token: photoToken() });
+}
+
+export async function saveProgress(id, stage, asPhotographer = false) {
+  if (asPhotographer) {
+    return request("/api/progress", { method: "POST", body: { id, stage }, auth: true, token: photoToken() });
+  }
+  return localOrServer(
+    () => {
+      setStage(id, stage);
+      return { progress: readProgress() };
+    },
+    () => request("/api/progress", { method: "POST", body: { id, stage }, auth: true }),
   );
 }
 
